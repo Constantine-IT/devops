@@ -21,14 +21,13 @@ func (app *Application) PostMetricaHandler(w http.ResponseWriter, r *http.Reques
 		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica types are allowed")
 		return
 	}
-	_, errUint := strconv.ParseUint(MetricaValue, 10, 64)
-	_, errFloat := strconv.ParseFloat(MetricaValue, 64)
-	if errUint != nil || errFloat != nil {
-		http.Error(w, "only GAUGE or COUNTER metrica values are allowed", http.StatusBadRequest)
-		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica values are allowed")
-		return
+	if _, err := strconv.ParseFloat(MetricaValue, 64); err != nil {
+		if _, err := strconv.ParseUint(MetricaValue, 10, 64); err != nil {
+			http.Error(w, "only GAUGE or COUNTER metrica values are allowed", http.StatusBadRequest)
+			app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica values are allowed")
+			return
+		}
 	}
-
 	//	сохраняем в базу связку MetricaName + MetricaType + MetricaValue
 	err := app.Datasource.Insert(MetricaName, MetricaType, MetricaValue)
 	if err != nil {

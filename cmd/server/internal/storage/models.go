@@ -2,6 +2,9 @@ package storage
 
 import "errors"
 
+//type gauge float64
+//type counter int64
+
 //	Datasource - интерфейс источника данных URL
 //	может реализовываться базой данных (Database) или структурами в оперативной памяти (Storage)
 type Datasource interface {

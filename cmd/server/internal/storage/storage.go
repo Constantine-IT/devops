@@ -2,6 +2,7 @@ package storage
 
 import (
 	"log"
+	"strconv"
 	"sync"
 )
 
@@ -23,7 +24,22 @@ func (s *Storage) Insert(name, mType, value string) error {
 
 	//	сохраняем метрики в оперативной памяти в структуре Storage
 	//	каждая запись - это сопоставленная с NAME структура из (MetricaType + VALUE) - MetricaRow
-	s.Data[name] = MetricaRow{mType, value}
+
+	if mType == "gauge" { //	для метрик типа GAUGE повторные вставки затирают предыдущие значения
+		s.Data[name] = MetricaRow{mType, value}
+	} else { //	для метрик типа COUNT - новое значение суммируется со старым, содержащимся в базе
+		var valueCount uint64 = 0 //	целочисленное представление для значение метрики типа COUNT
+		//	проверяем является ли целочисленным значением новое значение метрики типа COUNT
+		if valueCountNew, err := strconv.ParseUint(value, 10, 64); err == nil {
+			valueCount = valueCount + valueCountNew //	если да, то прибавляем его к вставляемому в базу значению
+		}
+		//	проверяем является ли целочисленным значением старое значение метрики типа COUNT в нашей базе данных
+		if valueCountOld, err := strconv.ParseUint(s.Data[name].value, 10, 64); err == nil {
+			valueCount = valueCount + valueCountOld //	если да, то прибавляем его к вставляемому в базу значению
+		}
+		s.Data[name] = MetricaRow{mType, strconv.FormatUint(valueCount, 10)}
+	}
+
 	//log.Println(name, s.Data[name])
 	return nil
 }

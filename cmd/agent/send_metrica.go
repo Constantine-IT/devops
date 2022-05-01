@@ -50,11 +50,8 @@ func sendMetrica(m runtime.MemStats, pollCount uint64, serverAddress string) {
 	metrica["PollCount"] = metricaRow{mType: "counter", value: strconv.FormatUint(pollCount, 10)}
 
 	for name, row := range metrica {
-		resp, err := http.Post("http://"+serverAddress+"/update/"+row.mType+"/"+name+"/"+row.value, "text/plain", nil)
-		if err != nil || resp == nil {
-			continue
-		}
-		//log.Println(name, row.value)
+		resp, _ := http.Post("http://"+serverAddress+"/update/"+row.mType+"/"+name+"/"+row.value, "text/plain", nil)
+		resp.Body.Close()
 	}
 
 }

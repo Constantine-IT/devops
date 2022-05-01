@@ -1,4 +1,4 @@
-# Сервис «Go в DevOps» - devops
+# Сервис «Go в DevOps»
 
 # Конфигурация сервера через переменные окружения:
 1. SERVER_ADDRESS - адрес запуска HTTP-сервера (по умолчанию - 127.0.0.1:8080)
@@ -7,6 +7,7 @@
 3. FILE_STORAGE_PATH - файл хранения сокращённых URL (по умолчанию - "", т.е. работаем без файла)
 
 `/cmd/server` - здесь содержится код, который компилируется в серверную часть приложения.
+
 `/cmd/agent` - здесь содержится код, который компилируется в клиентскую часть приложения.
 
 Запускаем командой `go run .`
@@ -35,5 +36,3 @@ go get github.com/go-chi/chi/v5/middleware
 go get github.com/stretchr/testify/assert
 go get github.com/stretchr/testify/require
 ```
-# go-musthave-devops-tpl
-Шаблон репозитория для практического трека «Go в DevOps».

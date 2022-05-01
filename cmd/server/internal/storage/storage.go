@@ -40,5 +40,4 @@ func (s *Storage) Get(name string) (mType, value string, flg int) {
 }
 
 func (s *Storage) Close() {
-	return
 }

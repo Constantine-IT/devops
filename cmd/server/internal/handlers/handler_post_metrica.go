@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/go-chi/chi/v5"
 	"net/http"
+	"strconv"
 )
 
 //	PostMetricaHandler - обработчик POST принимает значение метрики в формате
@@ -14,6 +15,19 @@ func (app *Application) PostMetricaHandler(w http.ResponseWriter, r *http.Reques
 	MetricaName := chi.URLParam(r, "MetricaName")
 	MetricaType := chi.URLParam(r, "MetricaType")
 	MetricaValue := chi.URLParam(r, "MetricaValue")
+
+	if MetricaType != "gauge" && MetricaType != "counter" {
+		http.Error(w, "only GAUGE or COUNTER metrica types are allowed", http.StatusNotImplemented)
+		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica types are allowed")
+		return
+	}
+	_, errUint := strconv.ParseUint(MetricaValue, 10, 64)
+	_, errFloat := strconv.ParseFloat(MetricaValue, 64)
+	if errUint != nil || errFloat != nil {
+		http.Error(w, "only GAUGE or COUNTER metrica values are allowed", http.StatusBadRequest)
+		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica values are allowed")
+		return
+	}
 
 	//	сохраняем в базу связку MetricaName + MetricaType + MetricaValue
 	err := app.Datasource.Insert(MetricaName, MetricaType, MetricaValue)

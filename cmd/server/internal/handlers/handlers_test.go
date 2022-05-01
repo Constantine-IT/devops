@@ -63,6 +63,28 @@ func TestHandlersResponse(t *testing.T) {
 				body:        "404 page not found\n",
 			},
 		},
+		{
+			name:        "Test #4: Request with unsupported metrica TYPE",
+			request:     "/update/unknown/Alloc/123",
+			requestType: http.MethodPost,
+			body:        "",
+			want: want{
+				statusCode:  http.StatusNotImplemented,
+				contentType: "text/plain; charset=utf-8",
+				body:        "only GAUGE or COUNTER metrica types are allowed\n",
+			},
+		},
+		{
+			name:        "Test #5: Request with unsupported metrica VALUE",
+			request:     "/update/gauge/Alloc/none",
+			requestType: http.MethodPost,
+			body:        "",
+			want: want{
+				statusCode:  http.StatusBadRequest,
+				contentType: "text/plain; charset=utf-8",
+				body:        "only GAUGE or COUNTER metrica values are allowed\n",
+			},
+		},
 	}
 
 	app := &Application{

@@ -7,6 +7,7 @@ import "errors"
 type Datasource interface {
 	Insert(name, mType, value string) error
 	Get(name string) (mType, value string, flg int)
+	GetAll() ([]MetricaValue, bool)
 	Close()
 }
 
@@ -15,6 +16,13 @@ type Datasource interface {
 type MetricaRow struct {
 	mType string
 	value string
+}
+
+//	RowStorage - структура записи в хранилище метрик в оперативной памяти
+//	используется для формирования структуры Storage и метода Storage.Insert
+type MetricaValue struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 //	ErrEmptyNotAllowed - ошибка возникающая при попытке вставить пустое значение в любое поле структуры хранения URL

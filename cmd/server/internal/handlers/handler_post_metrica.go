@@ -38,6 +38,6 @@ func (app *Application) PostMetricaHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Изготавливаем и возвращаем ответ, вставляя короткий URL в тело ответа в виде текста
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 }

@@ -85,6 +85,39 @@ func TestHandlersResponse(t *testing.T) {
 				body:        "only GAUGE or COUNTER metrica values are allowed\n",
 			},
 		},
+		{
+			name:        "Test #6: Request with supported metrica - SUCCESS",
+			request:     "/update/gauge/Alloc/1000",
+			requestType: http.MethodPost,
+			body:        "",
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "text/plain; charset=utf-8",
+				body:        "",
+			},
+		},
+		{
+			name:        "Test #7: Request GET metrica value, that previously stored ",
+			request:     "/value/gauge/Alloc",
+			requestType: http.MethodGet,
+			body:        "",
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "text/plain; charset=utf-8",
+				body:        "1000",
+			},
+		},
+		{
+			name:        "Test #8: Request GET all metrica with values",
+			request:     "/",
+			requestType: http.MethodGet,
+			body:        "",
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "application/json",
+				body:        `[{"name":"Alloc","value":"1000"}]`,
+			},
+		},
 	}
 
 	app := &Application{

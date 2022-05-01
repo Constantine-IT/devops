@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"log"
 	"sync"
 )
 
@@ -23,6 +24,7 @@ func (s *Storage) Insert(name, mType, value string) error {
 	//	сохраняем метрики в оперативной памяти в структуре Storage
 	//	каждая запись - это сопоставленная с NAME структура из (MetricaType + VALUE) - MetricaRow
 	s.Data[name] = MetricaRow{mType, value}
+	//log.Println(name, s.Data[name])
 	return nil
 }
 
@@ -36,7 +38,26 @@ func (s *Storage) Get(name string) (mType, value string, flg int) {
 	if _, ok := s.Data[name]; !ok {
 		return "", "", 0
 	} //	если метрика NAME не найдена, возвращаем flag=0
-	return s.Data[name].mType, value, 1 //	если метрика NAME найдена, возвращаем flag=1
+	log.Println(name, s.Data[name])
+	return s.Data[name].mType, s.Data[name].value, 1 //	если метрика NAME найдена, возвращаем flag=1
+}
+
+func (s *Storage) GetAll() ([]MetricaValue, bool) {
+	// блокируем хранилище на время считывания информации
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	metricaValues := make([]MetricaValue, 0)
+
+	for name, metricaRows := range s.Data {
+		metricaValues = append(metricaValues, MetricaValue{name, metricaRows.value})
+	}
+	//log.Println(metricaValues)
+	if len(metricaValues) == 0 { //	если записей не найдено - выставляем FLAG в положение FALSE
+		return nil, false
+	} else {
+		return metricaValues, true //	если записей найдены - выставляем FLAG в положение TRUE и возвращаем их
+	}
 }
 
 func (s *Storage) Close() {

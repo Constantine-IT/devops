@@ -30,11 +30,13 @@ func (app *Application) Routes() chi.Router {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	//	Эндпоинт POST / принимает значение метрики в формате PATH = /update/<ТИП_МЕТРИКИ>/<ИМЯ_МЕТРИКИ>/<ЗНАЧЕНИЕ_МЕТРИКИ>
+	//	Эндпоинт POST - принимает значение метрики в формате PATH = "/update/{MetricaType}/{MetricaName}/{MetricaValue}"
+	//	Эндпоинт GET - возвращает значение метикрики по данным из PATH = "/value/{MetricaType}/{MetricaName}"
+	//	Эндпоинт GET / - возвращает список всех сохраненных в базе метрик
 	r.Route("/", func(r chi.Router) {
 		r.Post("/update/{MetricaType}/{MetricaName}/{MetricaValue}", app.PostMetricaHandler)
-
-		//		r.Post("/", app.DefaultHandler)
+		r.Get("/value/{MetricaType}/{MetricaName}", app.GetMetricaHandler)
+		r.Get("/", app.GetAllMetricsHandler)
 	})
 
 	return r

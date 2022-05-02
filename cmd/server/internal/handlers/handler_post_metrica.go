@@ -25,7 +25,8 @@ func (app *Application) PostMetricaHandler(w http.ResponseWriter, r *http.Reques
 	}
 	_, errFloat := strconv.ParseFloat(Value, 64)
 	_, errInt := strconv.ParseInt(Value, 10, 64)
-	if errFloat == nil || errInt == nil {
+
+	if errFloat != nil && errInt != nil { //	если оба парсинга дали ошибку - то входящая переменная и не gauge, и не counter
 		http.Error(w, "only GAUGE or COUNTER metrica VALUES are allowed", http.StatusBadRequest)
 		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica VALUES are allowed")
 		return

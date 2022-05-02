@@ -76,7 +76,6 @@ func sendMetrics(m *runtime.MemStats, pollCounter *PollCounter, serverAddress st
 	pollCounter.mutex.Lock()
 	pollCounter.Count = 0
 	pollCounter.mutex.Unlock()
-	return
 }
 
 func sendPostMetrica(metrica Metrics, client *resty.Client, serverAddress string) {

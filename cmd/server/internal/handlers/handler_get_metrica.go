@@ -16,8 +16,8 @@ func (app *Application) GetMetricaHandler(w http.ResponseWriter, r *http.Request
 	MetricaType := chi.URLParam(r, "MetricaType")
 
 	if MetricaType != "gauge" && MetricaType != "counter" {
-		http.Error(w, "only GAUGE or COUNTER metrica types are allowed", http.StatusNotImplemented)
-		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica types are allowed")
+		http.Error(w, "only GAUGE or COUNTER metrica TYPES are allowed", http.StatusNotImplemented)
+		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica TYPES are allowed")
 		return
 	}
 

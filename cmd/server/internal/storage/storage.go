@@ -81,7 +81,7 @@ func (s *Storage) Get(name string) (mType string, delta int64, value float64, fl
 	for _, m := range s.Data {
 		if m.ID == name {
 			// если метрика с искомым имененм найдена возвращаем её тип и значение, с флагом flag=1
-			log.Println("GET return:", name, mType, delta, value, flg
+			log.Println("GET return:", name, mType, delta, value, flg)
 			return m.MType, m.Delta, m.Value, 1
 		}
 	}

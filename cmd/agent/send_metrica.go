@@ -2,12 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/go-resty/resty/v2"
 	"log"
 	"math/rand"
 	"runtime"
-	"strconv"
-
-	"github.com/go-resty/resty/v2"
 )
 
 //type gauge float64
@@ -90,7 +88,7 @@ func sendPostMetrica(metrica Metrics, client *resty.Client, serverAddress string
 	_, err = client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody([]byte(metricsJSON)).
-		Post("http://" + serverAddress + "/update/gauge/" + metrica.ID + "/" + strconv.FormatFloat(metrica.Value, 'f', -1, 64))
+		Post("http://" + serverAddress + "/update/")
 	if err != nil {
 		log.Println(err.Error())
 	}

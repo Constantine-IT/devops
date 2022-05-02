@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -22,17 +23,18 @@ func (app *Application) PostMetricaHandler(w http.ResponseWriter, r *http.Reques
 		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica TYPES are allowed")
 		return
 	}
-	if _, err := strconv.ParseFloat(MetricaValue, 64); err != nil {
-		if _, err := strconv.ParseInt(MetricaValue, 10, 64); err != nil {
-			http.Error(w, "only GAUGE or COUNTER metrica VALUES are allowed", http.StatusBadRequest)
-			app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica VALUES are allowed")
-			return
-		}
+	_, errFloat := strconv.ParseFloat(MetricaValue, 64)
+	_, errInt := strconv.ParseInt(MetricaValue, 10, 64)
+	if errFloat != nil || errInt != nil {
+		http.Error(w, "only GAUGE or COUNTER metrica VALUES are allowed", http.StatusBadRequest)
+		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica VALUES are allowed")
+		return
 	}
 	//	сохраняем в базу связку MetricaName + MetricaType + MetricaValue
 	//	если метрика имеет тип gauge, то передаем её в структуру хранения, как Value - type gauge float64
 	//	если метрика имеет тип counter, то передаем её в структуру хранения, как Delta - type counter int64
 	var err error
+	log.Println("OLD SCHOOL method", MetricaName, MetricaType, MetricaValue)
 
 	if MetricaType == "gauge" {
 		value, _ := strconv.ParseFloat(MetricaValue, 64)
@@ -47,7 +49,7 @@ func (app *Application) PostMetricaHandler(w http.ResponseWriter, r *http.Reques
 		app.ErrorLog.Println("URL save error:" + err.Error())
 		return
 	}
-
+	log.Println("OLD SCHOOL method insert SUCCESSFUL")
 	// Изготавливаем и возвращаем ответ c http.StatusOK
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)

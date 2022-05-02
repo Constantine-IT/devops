@@ -32,7 +32,7 @@ func main() {
 	//	парсим флаги
 	flag.Parse()
 
-	//time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 	pollTicker := time.NewTicker(pollInterval)
 	time.Sleep(500 * time.Millisecond)
 	reportTicker := time.NewTicker(reportInterval)

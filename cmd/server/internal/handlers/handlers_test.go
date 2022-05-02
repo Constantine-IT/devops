@@ -104,7 +104,7 @@ func TestHandlersResponse(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusOK,
 				contentType: "text/plain; charset=utf-8",
-				body:        "1000",
+				body:        "1000.000000",
 			},
 		},
 		{
@@ -144,7 +144,7 @@ func TestHandlersResponse(t *testing.T) {
 			name:        "Test #11: Request POST to insert one metrica value by API like autotest_4",
 			request:     "/update/",
 			requestType: http.MethodPost,
-			body:        `{"id":"HeapReleased", "type":"gauge", "value":2703360.00000}`,
+			body:        `{"id":"HeapReleased", "type":"gauge", "value":2695168.000000}`,
 			want: want{
 				statusCode:  http.StatusOK,
 				contentType: "text/plain; charset=utf-8",
@@ -159,7 +159,7 @@ func TestHandlersResponse(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusOK,
 				contentType: "application/json",
-				body:        `{"id":"HeapReleased", "type":"gauge", "value":2703360.00000}`,
+				body:        `{"id":"HeapReleased", "type":"gauge", "value":2695168.000000}`,
 			},
 		},
 		{
@@ -170,7 +170,7 @@ func TestHandlersResponse(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusOK,
 				contentType: "text/plain; charset=utf-8",
-				body:        `2.70336e+06`,
+				body:        `2695168.000000`,
 			},
 		},
 	}

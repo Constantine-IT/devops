@@ -36,7 +36,7 @@ func (app *Application) Routes() chi.Router {
 	// зададим встроенные middleware, чтобы улучшить стабильность приложения
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
+	//r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
 	/*	Эндпоинт POST - принимает значение метрики в формате PATH = "/update/{MetricaType}/{MetricaName}/{MetricaValue}"

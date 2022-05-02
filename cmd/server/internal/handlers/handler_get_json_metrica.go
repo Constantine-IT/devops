@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
 	"io"
+	"log"
 	"net/http"
 )
 
-//	GetJSONMetricaHandler - обработчик POST - принимает запрос значения метрики в формате JSON со структурой Metrics,
+//	GetJSONMetricaHandler - обработчик POST /value - принимает запрос значения метрики в формате JSON со структурой Metrics,
 //	с пустыми полями значения метрики, в ответ получает тот же JSON, но уже с заполненными полями
 
 func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +36,7 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 		app.ErrorLog.Println("JSON body parsing error:" + err.Error())
 		return
 	}
-
+	log.Println("incoming ==>", metrica)
 	if metrica.MType != "gauge" && metrica.MType != "counter" {
 		http.Error(w, "only GAUGE or COUNTER metrica TYPES are allowed", http.StatusNotImplemented)
 		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica TYPES are allowed")
@@ -43,7 +44,7 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	MetricaTypeFromDB, MetricaDeltaFromDB, MetricaValueFromDB, flagIsExist := app.Datasource.Get(metrica.ID)
-
+	log.Println("outgoing ==>", metrica)
 	metrica.Delta = MetricaDeltaFromDB
 	metrica.Value = MetricaValueFromDB
 

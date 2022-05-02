@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
 	"io"
-	"log"
 	"net/http"
 )
 
@@ -36,34 +35,33 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 		app.ErrorLog.Println("JSON body parsing error:" + err.Error())
 		return
 	}
-	log.Println("incoming ==>", metrica)
+	//log.Println("incoming ==>", metrica)
 	if metrica.MType != "gauge" && metrica.MType != "counter" {
 		http.Error(w, "only GAUGE or COUNTER metrica TYPES are allowed", http.StatusNotImplemented)
 		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica TYPES are allowed")
 		return
 	}
 
-	MetricaTypeFromDB, MetricaDeltaFromDB, MetricaValueFromDB, flagIsExist := app.Datasource.Get(metrica.ID)
-	log.Println("outgoing ==>", metrica)
-	metrica.Delta = MetricaDeltaFromDB
-	metrica.Value = MetricaValueFromDB
+	_, metrica.Delta, metrica.Value, _ = app.Datasource.Get(metrica.ID)
+	//log.Println("outgoing ==>", metrica)
+	//metrica.Delta = MetricaDeltaFromDB
+	//metrica.Value = MetricaValueFromDB
 
-	switch flagIsExist {
-	//	анализируем значение флага для выборки метрики
-	case 0: //	если метрика в базе не найдена
-		http.Error(w, "There is no such METRICA in our database", http.StatusNotFound)
-		app.ErrorLog.Println("There is no such METRICA in our database")
-		return
-	case 1: //	если метрика в базе найдена, то проверяем, того ли она типа, что указывалось при её сохранении
-		if metrica.MType != MetricaTypeFromDB { //	если тип метрики НЕ совпадает с хранимым в базе
-			http.Error(w, "metrica type you specified is NOT the same as in database", http.StatusBadRequest)
-			app.ErrorLog.Println("Metrica get error: metrica types you specified is NOT the same as in database")
+	/*
+		switch flagIsExist {
+		//	анализируем значение флага для выборки метрики
+		case 0: //	если метрика в базе не найдена
+			http.Error(w, "There is no such METRICA in our database", http.StatusNotFound)
+			app.ErrorLog.Println("There is no such METRICA in our database")
 			return
+		case 1: //	если метрика в базе найдена, то проверяем, того ли она типа, что указывалось при её сохранении
+			if metrica.MType != MetricaTypeFromDB { //	если тип метрики НЕ совпадает с хранимым в базе
+				http.Error(w, "metrica TYPE you specified is NOT the same as in database", http.StatusBadRequest)
+				app.ErrorLog.Println("metrica TYPE you specified is NOT the same as in database")
+				return
+			}
 		}
-	default:
-		http.Error(w, "Something goes wrong", http.StatusInternalServerError)
-		return
-	}
+	*/
 
 	//	если метрика в базе найдена, то преобразуем её структуру в JSON и вставляем в тело ответа
 	//	структуру JSON дополнительно описывать не надо, так как возвращаемая функцией Get структура Metrics уже имеет JSON теги

@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"log"
 	"sync"
 )
 
@@ -28,7 +27,7 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 	//	Блокируем структуру храниения в оперативной памяти на время записи информации
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	log.Println("INSERT", name, mType, delta, value)
+	//log.Println("INSERT", name, mType, delta, value)
 	//	сохраняем метрики в оперативной памяти в структуре Storage
 	//	каждая запись - это сопоставленная с NAME структура из (MetricaType + VALUE/DELTA) - Metrics
 
@@ -81,11 +80,10 @@ func (s *Storage) Get(name string) (mType string, delta int64, value float64, fl
 	for _, m := range s.Data {
 		if m.ID == name {
 			// если метрика с искомым имененм найдена возвращаем её тип и значение, с флагом flag=1
-			log.Println("GET return:", name, mType, delta, value, flg)
+			//log.Println("GET return:", name, mType, delta, value, flg)
 			return m.MType, m.Delta, m.Value, 1
 		}
 	}
-	log.Println("GET return:", name, mType, delta, value, flg)
 	return "", 0, 0, 0 //	если метрика с искомым имененм НЕ найдена, возвращаем flag=0
 }
 

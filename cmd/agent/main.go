@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 	"os/signal"
 	"runtime"
@@ -32,7 +31,7 @@ func main() {
 	//	парсим флаги
 	flag.Parse()
 
-	log.Println("AGENT: metrics collector start")
+	//log.Println("AGENT: metrics collector start")
 
 	pollTicker := time.NewTicker(pollInterval)
 	time.Sleep(100 * time.Millisecond)
@@ -48,7 +47,7 @@ func main() {
 		select {
 		case s := <-signalChanel:
 			if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
-				log.Println("AGENT metrics collector shutdown normal")
+				//log.Println("AGENT metrics collector shutdown normal")
 				os.Exit(0)
 			}
 		case <-pollTicker.C:
@@ -57,12 +56,12 @@ func main() {
 			pollCounter.mutex.Lock()
 			pollCounter.Count++
 			pollCounter.mutex.Unlock()
-			log.Println("AGENT: Statistics renewed")
+			//log.Println("AGENT: Statistics renewed")
 
 		case <-reportTicker.C:
 			//	высылаем собраннуе метрики на сервер
 			sendMetrics(&m, pollCounter, *ServerAddress)
-			log.Println("AGENT: Metrics sent to server")
+			//log.Println("AGENT: Metrics sent to server")
 		}
 	}
 }

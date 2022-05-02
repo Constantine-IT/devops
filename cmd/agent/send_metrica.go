@@ -53,7 +53,7 @@ func sendMetrics(m *runtime.MemStats, pollCounter *PollCounter, serverAddress st
 	// Create a resty client
 	client := resty.New()
 	client.RetryCount = 3
-	client.RetryWaitTime = time.Second
+	client.RetryWaitTime = 1 * time.Second
 
 	//	высылаем на сервер все метрики типа gauge
 	metrica := Metrics{MType: "gauge"}
@@ -80,18 +80,16 @@ func sendMetrics(m *runtime.MemStats, pollCounter *PollCounter, serverAddress st
 func sendPostMetrica(metrica Metrics, client *resty.Client, serverAddress string) {
 	//	изготавливаем JSON
 	metricsJSON, err := json.Marshal(metrica)
-	//log.Printf("%+v", metrica)
 	if err != nil || metricsJSON == nil {
 		log.Println("couldn't marshal metrica JSON")
 	}
-	//log.Println(string(metricsJSON))
+
 	// POST JSON string
-	resp, err := client.R().
+	_, err = client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(metricsJSON).
 		Post("http://" + serverAddress + "/update/")
 	if err != nil {
 		log.Println(err.Error())
 	}
-	log.Println(resp.Status())
 }

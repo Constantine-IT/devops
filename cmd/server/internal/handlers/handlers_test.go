@@ -104,7 +104,7 @@ func TestHandlersResponse(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusOK,
 				contentType: "text/plain; charset=utf-8",
-				body:        "1000.000000",
+				body:        "1000",
 			},
 		},
 		{
@@ -163,14 +163,47 @@ func TestHandlersResponse(t *testing.T) {
 			},
 		},
 		{
-			name:        "Test #13: Request GET to get one metrica value by OLD SCHOOL like autotest_4",
-			request:     "/value/gauge/HeapReleased",
+			name:        "Test #13: Request POST to put counter value by API",
+			request:     "/update/",
+			requestType: http.MethodPost,
+			body:        `{"id":"HeapCount", "type":"counter", "delta":111111}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "text/plain; charset=utf-8",
+				body:        ``,
+			},
+		},
+		{
+			name:        "Test #14: Request POST to get counter value by API",
+			request:     "/value/",
+			requestType: http.MethodPost,
+			body:        `{"id":"HeapCount", "type":"counter"}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "application/json",
+				body:        `{"id":"HeapCount", "type":"counter", "delta":111111}`,
+			},
+		},
+		{
+			name:        "Test #15: Request POST to put counter value by API in SECOND time",
+			request:     "/update/",
+			requestType: http.MethodPost,
+			body:        `{"id":"HeapCount", "type":"counter", "delta":111111}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "text/plain; charset=utf-8",
+				body:        ``,
+			},
+		},
+		{
+			name:        "Test #16: Request POST to get counter (that was SECOND updated) value by OLD SCHOOL",
+			request:     "/value/counter/HeapCount",
 			requestType: http.MethodGet,
 			body:        ``,
 			want: want{
 				statusCode:  http.StatusOK,
 				contentType: "text/plain; charset=utf-8",
-				body:        `2695168.000000`,
+				body:        `222222`,
 			},
 		},
 	}

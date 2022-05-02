@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
 	"io"
-	"log"
 	"net/http"
 )
 
-//	PostJSONMetricaHandler - обработчик POST /update принимает значение метрики в формате JSON со структурой Metrics
+//	PostJSONMetricaHandler - обработчик POST /update/ принимает значение метрики в формате JSON со структурой Metrics
 func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -33,7 +32,7 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 		app.ErrorLog.Println("JSON body parsing error:" + err.Error())
 		return
 	}
-	log.Println("incoming for UPDATE ==>", metrica)
+	//log.Println("incoming for UPDATE ==>", metrica)
 	if metrica.MType != "gauge" && metrica.MType != "counter" {
 		http.Error(w, "only GAUGE or COUNTER metrica TYPES are allowed", http.StatusNotImplemented)
 		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica TYPES are allowed")
@@ -57,7 +56,7 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 		app.ErrorLog.Println("URL save error:" + errType.Error())
 		return
 	}
-	log.Println("UPDATE successful")
+	//log.Println("UPDATE successful")
 	// Изготавливаем и возвращаем ответ c http.StatusOK
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)

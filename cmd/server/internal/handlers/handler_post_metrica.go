@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -35,7 +34,7 @@ func (app *Application) PostMetricaHandler(w http.ResponseWriter, r *http.Reques
 	//	если метрика имеет тип gauge, то передаем её в структуру хранения, как Value - type gauge float64
 	//	если метрика имеет тип counter, то передаем её в структуру хранения, как Delta - type counter int64
 	var err error
-	log.Println("OLD SCHOOL method", Name, Type, Value)
+	//log.Println("OLD SCHOOL method", Name, Type, Value)
 
 	if Type == "gauge" {
 		value, _ := strconv.ParseFloat(Value, 64)
@@ -50,7 +49,7 @@ func (app *Application) PostMetricaHandler(w http.ResponseWriter, r *http.Reques
 		app.ErrorLog.Println("URL save error:" + err.Error())
 		return
 	}
-	log.Println("OLD SCHOOL method insert SUCCESSFUL")
+	//log.Println("OLD SCHOOL method insert SUCCESSFUL")
 	// Изготавливаем и возвращаем ответ c http.StatusOK
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)

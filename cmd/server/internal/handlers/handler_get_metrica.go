@@ -40,7 +40,7 @@ func (app *Application) GetMetricaHandler(w http.ResponseWriter, r *http.Request
 			w.WriteHeader(http.StatusOK)
 			if Type == "gauge" {
 				var value []byte
-				value = strconv.AppendFloat(value, MetricaValueFromDB, 'f', -1, 64)
+				value = strconv.AppendFloat(value, MetricaValueFromDB, 'g', -1, 64)
 				w.Write(value) //	пишем MetricaValue в BYTE виде в тело ответа
 			}
 			if Type == "counter" {

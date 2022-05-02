@@ -140,6 +140,39 @@ func TestHandlersResponse(t *testing.T) {
 				body:        ``,
 			},
 		},
+		{
+			name:        "Test #11: Request POST to insert one metrica value by API like autotest_4",
+			request:     "/update/",
+			requestType: http.MethodPost,
+			body:        `{"id":"HeapReleased", "type":"gauge", "value":2703360.00000}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "text/plain; charset=utf-8",
+				body:        ``,
+			},
+		},
+		{
+			name:        "Test #12: Request POST to get one metrica value by API like autotest_4",
+			request:     "/value/",
+			requestType: http.MethodPost,
+			body:        `{"id":"HeapReleased", "type":"gauge"}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "application/json",
+				body:        `{"id":"HeapReleased", "type":"gauge", "value":2703360.00000}`,
+			},
+		},
+		{
+			name:        "Test #13: Request GET to get one metrica value by OLD SCHOOL like autotest_4",
+			request:     "/value/gauge/HeapReleased",
+			requestType: http.MethodGet,
+			body:        ``,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "text/plain; charset=utf-8",
+				body:        `2.70336e+06`,
+			},
+		},
 	}
 
 	app := &Application{

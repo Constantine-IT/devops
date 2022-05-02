@@ -71,7 +71,7 @@ func TestHandlersResponse(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusNotImplemented,
 				contentType: "text/plain; charset=utf-8",
-				body:        "only GAUGE or COUNTER metrica types are allowed\n",
+				body:        "only GAUGE or COUNTER metrica TYPES are allowed\n",
 			},
 		},
 		{
@@ -82,7 +82,7 @@ func TestHandlersResponse(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusBadRequest,
 				contentType: "text/plain; charset=utf-8",
-				body:        "only GAUGE or COUNTER metrica values are allowed\n",
+				body:        "only GAUGE or COUNTER metrica VALUES are allowed\n",
 			},
 		},
 		{
@@ -115,7 +115,7 @@ func TestHandlersResponse(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusOK,
 				contentType: "application/json",
-				body:        `[{"name":"Alloc","value":"1000"}]`,
+				body:        `[{"id":"Alloc", "type":"gauge", "value":1000}]`,
 			},
 		},
 	}
@@ -124,7 +124,7 @@ func TestHandlersResponse(t *testing.T) {
 		ErrorLog:   log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile),
 		InfoLog:    log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime),
 		BaseURL:    "http://127.0.0.1:8080",
-		Datasource: &storage.Storage{Data: make(map[string]storage.MetricaRow)},
+		Datasource: &storage.Storage{Data: make([]storage.Metrics, 0)},
 	}
 
 	for _, tt := range tests {

@@ -1,8 +1,10 @@
 package handlers
 
 import (
-	"github.com/go-chi/chi/v5"
 	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
 )
 
 //	GetMetricaHandler - обработчик GET - возвращает значение метикрики по данным из
@@ -19,8 +21,10 @@ func (app *Application) GetMetricaHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	//func (s *Storage) Get(name string) (mType string, delta int64, value float64, flg int)
+
 	//	ищем в базее связку MetricaValue по заданным MetricaName + MetricaType
-	MetricaTypeFromDB, MetricaValue, flag := app.Datasource.Get(MetricaName)
+	MetricaTypeFromDB, MetricaDelta, MetricaValue, flag := app.Datasource.Get(MetricaName)
 
 	switch flag {
 	//	анализируем значение флага для выборки метрики
@@ -29,14 +33,23 @@ func (app *Application) GetMetricaHandler(w http.ResponseWriter, r *http.Request
 		app.ErrorLog.Println("There is no such METRICA in our database")
 		return
 	case 1: //	если метрика в базе найдена, то проверяем, того ли она типа, что указывалось при её сохранении
-		if MetricaType == MetricaTypeFromDB { //	если тип метрики совпал
-			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(MetricaValue)) //	пишем MetricaValue в текстовом виде в тело ответа
-		} else { //	если тип для метрики не совпал с хранимым в базе
+		if MetricaType != MetricaTypeFromDB { //	если тип метрики НЕ совпадает с хранимым в базе
 			http.Error(w, "metrica type you specified is NOT the same as in database", http.StatusBadRequest)
 			app.ErrorLog.Println("Metrica get error: metrica types you specified is NOT the same as in database")
 			return
+		} else { //	если тип метрики совпадает с хранимым в базе
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			if MetricaType == "gauge" {
+				var value []byte
+				value = strconv.AppendFloat(value, MetricaValue, 'E', -1, 64)
+				w.Write(value) //	пишем MetricaValue в текстовом виде в тело ответа
+			}
+			if MetricaType == "counter" {
+				var delta []byte
+				delta = strconv.AppendInt(delta, MetricaDelta, 64)
+				w.Write(delta) //	пишем MetricaValue в текстовом виде в тело ответа
+			}
 		}
 	default:
 		http.Error(w, "Something goes wrong", http.StatusInternalServerError)

@@ -67,5 +67,8 @@ func main() {
 		ErrorLog: app.ErrorLog,
 		Handler:  app.Routes(),
 	}
-	errorLog.Fatal(srv.ListenAndServe())
+	syserr := srv.ListenAndServe()
+	if syserr != nil {
+		os.Exit(0)
+	}
 }

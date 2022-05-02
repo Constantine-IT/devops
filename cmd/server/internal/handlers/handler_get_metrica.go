@@ -42,12 +42,12 @@ func (app *Application) GetMetricaHandler(w http.ResponseWriter, r *http.Request
 			w.WriteHeader(http.StatusOK)
 			if MetricaType == "gauge" {
 				var value []byte
-				value = strconv.AppendFloat(value, MetricaValue, 'E', -1, 64)
+				value = strconv.AppendFloat(value, MetricaValue, 'f', -1, 64)
 				w.Write(value) //	пишем MetricaValue в текстовом виде в тело ответа
 			}
 			if MetricaType == "counter" {
 				var delta []byte
-				delta = strconv.AppendInt(delta, MetricaDelta, 64)
+				delta = strconv.AppendInt(delta, MetricaDelta, 10)
 				w.Write(delta) //	пишем MetricaValue в текстовом виде в тело ответа
 			}
 		}

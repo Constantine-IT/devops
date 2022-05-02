@@ -90,7 +90,7 @@ func sendPostMetrica(metrica Metrics, client *resty.Client, serverAddress string
 	_, err = client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody([]byte(metricsJSON)).
-		Post("http://" + serverAddress + "/update/gauge/" + metrica.ID + "/" + strconv.FormatFloat(metrica.Value, 'E', -1, 64))
+		Post("http://" + serverAddress + "/update/gauge/" + metrica.ID + "/" + strconv.FormatFloat(metrica.Value, 'f', -1, 64))
 	if err != nil {
 		log.Println(err.Error())
 	}

@@ -32,6 +32,8 @@ func main() {
 	//	парсим флаги
 	flag.Parse()
 
+	log.Println("AGENT: metrics collector start")
+
 	time.Sleep(5 * time.Second)
 	pollTicker := time.NewTicker(pollInterval)
 	time.Sleep(500 * time.Millisecond)
@@ -42,8 +44,6 @@ func main() {
 		syscall.SIGINT,
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
-
-	log.Println("AGENT: metrics collector start")
 
 	for {
 		select {

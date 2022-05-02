@@ -8,8 +8,6 @@ import (
 	"runtime"
 )
 
-//type gauge float64
-//type counter int64
 type Metrics struct {
 	ID    string  `json:"id"`              // имя метрики
 	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
@@ -85,11 +83,12 @@ func sendPostMetrica(metrica Metrics, client *resty.Client, serverAddress string
 	}
 	//log.Println(string(metricsJSON))
 	// POST JSON string
-	_, err = client.R().
+	resp, err := client.R().
 		SetHeader("Content-Type", "application/json").
-		SetBody([]byte(metricsJSON)).
+		SetBody(metricsJSON).
 		Post("http://" + serverAddress + "/update/")
 	if err != nil {
 		log.Println(err.Error())
 	}
+	log.Println(resp.Status())
 }

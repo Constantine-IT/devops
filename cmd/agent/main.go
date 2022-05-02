@@ -50,7 +50,7 @@ func main() {
 		case s := <-signalChanel:
 			if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
 				log.Println("AGENT metrics collector shutdown normal")
-				os.Exit(1)
+				os.Exit(0)
 			}
 		case <-pollTicker.C:
 			//	считываем статиститку и увеличиваем счетчик считываний на 1

@@ -47,7 +47,9 @@ func (app *Application) Routes() chi.Router {
 		Эндпоинт GET / - возвращает список всех сохраненных в базе метрик	*/
 	r.Route("/", func(r chi.Router) {
 		r.Post("/update/{MetricaType}/{MetricaName}/{MetricaValue}", app.PostMetricaHandler)
+		r.Post("/update/", app.PostJSONMetricaHandler)
 		r.Post("/update", app.PostJSONMetricaHandler)
+		r.Post("/value/", app.GetJSONMetricaHandler)
 		r.Post("/value", app.GetJSONMetricaHandler)
 		r.Get("/value/{MetricaType}/{MetricaName}", app.GetMetricaHandler)
 		r.Get("/", app.GetAllMetricsHandler)

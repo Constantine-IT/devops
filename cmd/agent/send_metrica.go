@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"runtime"
+	"time"
 )
 
 type Metrics struct {
@@ -51,6 +52,8 @@ func sendMetrics(m *runtime.MemStats, pollCounter *PollCounter, serverAddress st
 
 	// Create a resty client
 	client := resty.New()
+	client.RetryCount = 3
+	client.RetryWaitTime = time.Second
 
 	//	высылаем на сервер все метрики типа gauge
 	metrica := Metrics{MType: "gauge"}

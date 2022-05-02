@@ -34,9 +34,8 @@ func main() {
 
 	log.Println("AGENT: metrics collector start")
 
-	time.Sleep(5 * time.Second)
 	pollTicker := time.NewTicker(pollInterval)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	reportTicker := time.NewTicker(reportInterval)
 
 	signalChanel := make(chan os.Signal, 1)

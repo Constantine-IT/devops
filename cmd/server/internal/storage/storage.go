@@ -77,16 +77,16 @@ func (s *Storage) Get(name string) (mType string, delta int64, value float64, fl
 
 	//	проверяем, есть ли запись с запрашиваемым NAME в базе
 
-	for i, m := range s.Data {
+	for _, m := range s.Data {
 		if m.ID == name {
 			// если метрика с искомым имененм найдена возвращаем её тип и значение, с флагом flag=1
-			return s.Data[i].MType, s.Data[i].Delta, s.Data[i].Value, 1
+			return m.MType, m.Delta, m.Value, 1
 		}
 	}
 	return "", 0, 0, 0 //	если метрика с искомым имененм НЕ найдена, возвращаем flag=0
 }
 
-func (s *Storage) GetAll() ([]Metrics) {
+func (s *Storage) GetAll() []Metrics {
 	// блокируем хранилище на время считывания информации
 	s.mutex.Lock()
 	defer s.mutex.Unlock()

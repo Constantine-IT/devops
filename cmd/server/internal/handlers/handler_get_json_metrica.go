@@ -42,28 +42,10 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	//	сохраняем в базу связку MetricaName + MetricaType + MetricaValue
-	//	если метрика имеет тип gauge, то передаем её в структуру хранения, как Value - type gauge float64
-	//	если метрика имеет тип counter, то передаем её в структуру хранения, как Delta - type counter int64
-	var errType error
+	MetricaTypeFromDB, MetricaDeltaFromDB, MetricaValueFromDB, flagIsExist := app.Datasource.Get(metrica.ID)
 
-	if metrica.MType == "gauge" {
-		errType = app.Datasource.Insert(metrica.ID, metrica.MType, 0, metrica.Value)
-	}
-	if metrica.MType == "counter" {
-		errType = app.Datasource.Insert(metrica.ID, metrica.MType, metrica.Delta, 0)
-	}
-	if errType != nil {
-		http.Error(w, errType.Error(), http.StatusInternalServerError)
-		app.ErrorLog.Println("URL save error:" + errType.Error())
-		return
-	}
-
-	//	func (s *Storage) Get(name string) (mType string, delta int64, value float64, flg int)
-
-	var flagIsExist int
-	var MetricaTypeFromDB string
-	MetricaTypeFromDB, metrica.Delta, metrica.Value, flagIsExist = app.Datasource.Get(metrica.ID)
+	metrica.Delta = MetricaDeltaFromDB
+	metrica.Value = MetricaValueFromDB
 
 	switch flagIsExist {
 	//	анализируем значение флага для выборки метрики

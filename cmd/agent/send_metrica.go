@@ -81,6 +81,7 @@ func sendMetrics(m *runtime.MemStats, pollCounter *PollCounter, serverAddress st
 func sendPostMetrica(metrica Metrics, client *resty.Client, serverAddress string) {
 	//	изготавливаем JSON
 	metricsJSON, err := json.Marshal(metrica)
+	//log.Printf("%+v", metrica)
 	if err != nil || metricsJSON == nil {
 		log.Println("couldn't marshal metrica JSON")
 	}

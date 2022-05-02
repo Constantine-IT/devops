@@ -22,7 +22,6 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 	//	структура storage.Metrics используется для приема и выдачи значений метрик
 	//	теги для JSON там уже описаны, так что дополнительного описания для парсинга не требуется
 
-	//	создаеём экземпляр структуры для заполнения из JSON
 	metrica := storage.Metrics{}
 
 	//	парсим JSON и записываем результат в экземпляр структуры
@@ -43,6 +42,7 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 	//	сохраняем в базу связку MetricaName + MetricaType + MetricaValue
 	//	если метрика имеет тип gauge, то передаем её в структуру хранения, как Value - type gauge float64
 	//	если метрика имеет тип counter, то передаем её в структуру хранения, как Delta - type counter int64
+
 	var errType error
 
 	if metrica.MType == "gauge" {

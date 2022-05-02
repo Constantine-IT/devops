@@ -118,6 +118,28 @@ func TestHandlersResponse(t *testing.T) {
 				body:        `[{"id":"Alloc", "type":"gauge", "value":1000}]`,
 			},
 		},
+		{
+			name:        "Test #9: Request POST to get one metrica value by API",
+			request:     "/value",
+			requestType: http.MethodPost,
+			body:        `{"id":"Alloc", "type":"gauge"}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "application/json",
+				body:        `{"id":"Alloc", "type":"gauge", "value":1000}`,
+			},
+		},
+		{
+			name:        "Test #10: Request POST to update one metrica value by API",
+			request:     "/update",
+			requestType: http.MethodPost,
+			body:        `{"id":"Alloc", "type":"gauge"}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "text/plain; charset=utf-8",
+				body:        ``,
+			},
+		},
 	}
 
 	app := &Application{

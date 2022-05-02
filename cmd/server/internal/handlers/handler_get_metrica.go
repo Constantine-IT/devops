@@ -11,27 +11,25 @@ import (
 //	PATH = "/value/{MetricaType}/{MetricaName}"
 func (app *Application) GetMetricaHandler(w http.ResponseWriter, r *http.Request) {
 
-	//	считываем имя метрики из PATH входящего запроса
+	//	считываем имя метрики и тип метрики из PATH входящего запроса
 	Name := chi.URLParam(r, "MetricaName")
 	Type := chi.URLParam(r, "MetricaType")
 
+	// поддерживаются только типы метрик gauge и counter
 	if Type != "gauge" && Type != "counter" {
 		http.Error(w, "only GAUGE or COUNTER metrica TYPES are allowed", http.StatusNotImplemented)
 		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica TYPES are allowed")
 		return
 	}
 
-	//	ищем в базее связку MetricaValue по заданным MetricaName + MetricaType
+	//	ищем в базее метрику с входящим именем - Name, и выводим по ней тип и значение
 	MetricaTypeFromDB, MetricaDeltaFromDB, MetricaValueFromDB, flag := app.Datasource.Get(Name)
 
 	switch flag {
 	//	анализируем значение флага для выборки метрики
 	case 0: //	если метрика в базе не найдена
-		//http.Error(w, "There is no such METRICA in our database", http.StatusNotFound)
-		//app.ErrorLog.Println("There is no such METRICA in our database")
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("0"))
+		http.Error(w, "There is no such METRICA in our database", http.StatusNotFound)
+		app.ErrorLog.Println("There is no such METRICA in our database")
 		return
 	case 1: //	если метрика в базе найдена, то проверяем, того ли она типа, что указывалось при её сохранении
 		if Type != MetricaTypeFromDB { //	если тип метрики НЕ совпадает с хранимым в базе
@@ -41,12 +39,12 @@ func (app *Application) GetMetricaHandler(w http.ResponseWriter, r *http.Request
 		} else { //	если тип метрики совпадает с хранимым в базе
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
-			if Type == "gauge" {
+			if Type == "gauge" { //	для типа gauge преобразуем значение метрики из Float64 в []byte
 				var value []byte
 				value = strconv.AppendFloat(value, MetricaValueFromDB, 'f', -1, 64)
 				w.Write(value) //	пишем MetricaValue в BYTE виде в тело ответа
 			}
-			if Type == "counter" {
+			if Type == "counter" { //	для типа counter преобразуем значение метрики из Int64 в []byte
 				var delta []byte
 				delta = strconv.AppendInt(delta, MetricaDeltaFromDB, 10)
 				w.Write(delta) //	пишем MetricaValue в BYTE виде в тело ответа
@@ -54,5 +52,6 @@ func (app *Application) GetMetricaHandler(w http.ResponseWriter, r *http.Request
 		}
 	default:
 		http.Error(w, "Something goes wrong", http.StatusInternalServerError)
+		return
 	}
 }

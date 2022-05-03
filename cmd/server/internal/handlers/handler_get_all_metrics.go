@@ -33,7 +33,7 @@ func (app *Application) GetAllMetricsHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	//	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(metricsJSON) //	пишем MetricaValue в JSON виде в тело ответа
 }

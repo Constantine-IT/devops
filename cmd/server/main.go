@@ -32,7 +32,7 @@ func main() {
 	//	Считываем флаги запуска из командной строки и задаём значения по умолчанию, если флаг при запуске не указан
 	ServerAddress := flag.String("a", "127.0.0.1:8080", "ADDRESS — адрес запуска HTTP-сервера")
 	StoreFile := flag.String("f", "/tmp/devops-metrics-db.json", "STORE_FILE — путь до файла с сокращёнными метриками")
-	StoreInterval := flag.Int("i", 300, "STORE_INTERVAL — интервал сброса показания сервера на диск")
+	StoreInterval := flag.Int("i", 10, "STORE_INTERVAL — интервал сброса показания сервера на диск")
 	RestoreOnStart := flag.Bool("r", true, "RESTORE — определяет, загружать ли метрики файла при старте сервера")
 	DatabaseDSN := flag.String("d", "", "DATABASE_DSN — адрес подключения к БД (PostgreSQL)")
 	//	парсим флаги
@@ -116,6 +116,7 @@ func main() {
 		case <-fileWriteTicker.C:
 			if *StoreFile != "" {
 				//	пишем метрики в файл
+				log.Println("All metrics were written to file:", *StoreFile)
 				if err := app.Datasource.DumpToFile(); err != nil {
 					log.Println("SERVER metrics collector unable to write to file - (code 1) SHUTDOWN")
 					os.Exit(1)

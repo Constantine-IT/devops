@@ -24,7 +24,7 @@ type writer struct {
 //	NewWriter - конструктор, создающий экземпляр файлового дескриптора для записи
 func NewWriter(fileName string) (*writer, error) {
 	//	файл открывается только на запись с добавлением в конец файла, если файла нет - создаем
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777) //	|os.O_APPEND
 	if err != nil {
 		return nil, err
 	}
@@ -89,16 +89,25 @@ func InitialFulfilment(s *Storage) error {
 	defer s.mutex.Unlock()
 
 	for { //	считываем записи по одной из файла-хранилища HASH + <original_URL> + UserID + IsDeleted
+		addMetrica := true
 		metrica, err := fileReader.Read()
 		//	когда дойдем до конца файла - выходим из цикла чтения
 		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
-			return err
+			return nil
+			//return err
 		}
 		//	добавляем считанную метрику в хранилище в оперативной памяти - Storage
-		s.Data = append(s.Data, *metrica)
+		for _, m := range s.Data {
+			if m.ID == metrica.ID {
+				addMetrica = false
+			}
+		}
+		if addMetrica {
+			s.Data = append(s.Data, *metrica)
+		}
 	}
 	return nil
 }

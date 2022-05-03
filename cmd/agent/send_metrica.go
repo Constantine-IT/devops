@@ -10,10 +10,10 @@ import (
 )
 
 type Metrics struct {
-	ID    string  `json:"id"`              // имя метрики
-	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
 func sendMetrics(m *runtime.MemStats, pollCounter *PollCounter, serverAddress string) {
@@ -56,18 +56,22 @@ func sendMetrics(m *runtime.MemStats, pollCounter *PollCounter, serverAddress st
 	client.RetryWaitTime = 1 * time.Second
 
 	//	высылаем на сервер все метрики типа gauge
-	metrica := Metrics{MType: "gauge"}
+	//var delta int64 = 0
+	//var value float64 = 0
+
 	for name, row := range gaugeMetrics {
-		metrica.ID = name
-		metrica.Value = row
+		metrica := Metrics{ID: name,
+			MType: "gauge",
+			Delta: nil,
+			Value: &row}
 		sendPostMetrica(metrica, client, serverAddress)
 	}
 
 	//	высылаем на сервер все метрики типа counter
-	metrica = Metrics{ID: "PollCount",
+	metrica := Metrics{ID: "PollCount",
 		MType: "counter",
-		Delta: pollCounter.Count,
-		Value: 0,
+		Delta: &pollCounter.Count,
+		Value: nil,
 	}
 	sendPostMetrica(metrica, client, serverAddress)
 

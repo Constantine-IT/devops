@@ -32,7 +32,7 @@ func main() {
 	//	Считываем флаги запуска из командной строки и задаём значения по умолчанию, если флаг при запуске не указан
 	ServerAddress := flag.String("a", "127.0.0.1:8080", "ADDRESS — адрес запуска HTTP-сервера")
 	StoreFile := flag.String("f", "/tmp/devops-metrics-db.json", "STORE_FILE — путь до файла с сокращёнными метриками")
-	StoreInterval := flag.Int("i", 10, "STORE_INTERVAL — интервал сброса показания сервера на диск")
+	StoreInterval := flag.Int("i", 300, "STORE_INTERVAL — интервал сброса показания сервера на диск")
 	RestoreOnStart := flag.Bool("r", true, "RESTORE — определяет, загружать ли метрики файла при старте сервера")
 	DatabaseDSN := flag.String("d", "", "DATABASE_DSN — адрес подключения к БД (PostgreSQL)")
 	//	парсим флаги
@@ -41,18 +41,26 @@ func main() {
 	//	считываем переменные окружения
 	//	если они заданы - переопределяем соответствующие локальные переменные:
 	if u, flg := os.LookupEnv("ADDRESS"); flg {
+		log.Println("ENV:   ADDRESS set to: ", u)
 		*ServerAddress = u
 	}
 	if u, flg := os.LookupEnv("STORE_FILE"); flg {
+		log.Println("ENV:   STORE_FILE set to: ", u)
 		*StoreFile = u
 	}
 	if u, flg := os.LookupEnv("STORE_INTERVAL"); flg {
-		*StoreInterval, _ = strconv.Atoi(u) //	конвертируем считанный string в int
+		if strIntrvl, err := strconv.Atoi(u); err != nil { //	конвертируем считанный string в int
+			log.Println("ENV:   error with parsing STORE_INTERVAL")
+		} else {
+			*StoreInterval = strIntrvl
+		}
 	}
 	if u, flg := os.LookupEnv("RESTORE"); flg {
 		if u == "false" { //	если флаг равен FALSE, то присвоим переменной значение FALSE
+			log.Println("ENV:   RESTORE set to FALSE")
 			*RestoreOnStart = false
 		} else { //	для всех иных явно заданных значений флага, присваиваем переменной значение TRUE
+			log.Println("ENV:   RESTORE set to TRUE")
 			*RestoreOnStart = true
 		}
 	}

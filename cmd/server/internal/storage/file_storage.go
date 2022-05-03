@@ -24,7 +24,7 @@ type writer struct {
 //	NewWriter - конструктор, создающий экземпляр файлового дескриптора для записи
 func NewWriter(fileName string) (*writer, error) {
 	//	файл открывается только на запись с добавлением в конец файла, если файла нет - создаем
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777) //	|os.O_APPEND
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777) //	|os.O_APPEND|os.O_TRUNC
 	if err != nil {
 		return nil, err
 	}

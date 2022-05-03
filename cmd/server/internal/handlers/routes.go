@@ -22,7 +22,7 @@ func (app *Application) Routes() chi.Router {
 	r := chi.NewRouter()
 
 	// зададим middleware для поддержки компрессии тел запросов и ответов
-	r.Use(middleware.Compress(1, `text/plain`, `application/json`))
+	r.Use(middleware.Compress(1, `text/plain`, `application/json`, `text/html`))
 	r.Use(middleware.AllowContentEncoding(`gzip`))
 	//	middleware для декомпрессии входящих пакетов
 	r.Use(app.DecompressGZIP)

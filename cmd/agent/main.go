@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -18,11 +17,10 @@ type PollCounter struct {
 }
 
 func main() {
-
-	var m runtime.MemStats
-
-	pollCounter := &PollCounter{Count: 0}
-
+	//	Приоритеты настроек:
+	//	1.	Переменные окружения - ENV
+	//	2.	Значения, задаваемые флагами при запуске из консоли
+	//	3.	Значения по умолчанию.
 	//	Считываем флаги запуска из командной строки и задаём значения по умолчанию, если флаг при запуске не указан
 	ServerAddress := flag.String("a", "127.0.0.1:8080", "ADDRESS - адрес сервера-агрегатора метрик")
 	PollInterval := flag.Duration("p", 2*time.Second, "POLL_INTERVAL - интервал обновления метрик (сек.)")
@@ -35,15 +33,16 @@ func main() {
 	if aString, flg := os.LookupEnv("ADDRESS"); flg {
 		*ServerAddress = aString
 	}
-	if pString, flg := os.LookupEnv("POLL_INTERVAL"); flg {
-		pInt, _ := strconv.Atoi(pString)                  //	LookupEnv всегда считывает тип string - преобразуем его в int
-		*PollInterval = time.Duration(pInt) * time.Second //	и зададим интервал в pInt секунд
+	if p, flg := os.LookupEnv("POLL_INTERVAL"); flg {
+		*PollInterval, _ = time.ParseDuration(p) //	конвертируеим считанный string в интервал в секундах
 	}
-	if rString, flg := os.LookupEnv("REPORT_INTERVAL"); flg {
-		rInt, _ := strconv.Atoi(rString)                    //	LookupEnv всегда считывает тип string - преобразуем его в int
-		*ReportInterval = time.Duration(rInt) * time.Second //	и зададим интервал в rInt секунд
+	if r, flg := os.LookupEnv("REPORT_INTERVAL"); flg {
+		*ReportInterval, _ = time.ParseDuration(r) //	конвертируеим считанный string в интервал в секундах
+	}
+	
+	var m runtime.MemStats
 
-	}
+	pollCounter := &PollCounter{Count: 0} // создаем экземпляр структуры счётчика сбора метрик
 
 	pollTicker := time.NewTicker(*PollInterval)
 	time.Sleep(100 * time.Millisecond)

@@ -44,8 +44,8 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	MetricaTypeFromDB, MetricaDeltaFromDB, MetricaValueFromDB, flagIsExist := app.Datasource.Get(metrica.ID)
-	metrica.Delta = MetricaDeltaFromDB
-	metrica.Value = MetricaValueFromDB
+	metrica.Delta = &MetricaDeltaFromDB
+	metrica.Value = &MetricaValueFromDB
 
 	switch flagIsExist {
 	//	анализируем значение флага для выборки метрики

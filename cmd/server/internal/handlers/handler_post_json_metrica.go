@@ -46,10 +46,10 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 	var errType error
 
 	if metrica.MType == "gauge" {
-		errType = app.Datasource.Insert(metrica.ID, metrica.MType, 0, metrica.Value)
+		errType = app.Datasource.Insert(metrica.ID, metrica.MType, 0, *metrica.Value)
 	}
 	if metrica.MType == "counter" {
-		errType = app.Datasource.Insert(metrica.ID, metrica.MType, metrica.Delta, 0)
+		errType = app.Datasource.Insert(metrica.ID, metrica.MType, *metrica.Delta, 0)
 	}
 	if errType != nil {
 		http.Error(w, errType.Error(), http.StatusInternalServerError)

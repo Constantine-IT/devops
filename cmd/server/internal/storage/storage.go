@@ -6,10 +6,10 @@ import (
 
 //	Metrics - структура для хранения метрик и обмена данными между сервером и агентом
 type Metrics struct {
-	ID    string  `json:"id"`              // имя метрики
-	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
 //	Storage - структура хранилища метрик для работы в оперативной памяти
@@ -35,7 +35,7 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 		flgExist := 0
 		for i, m := range s.Data {
 			if m.ID == name {
-				s.Data[i].Value = value
+				*s.Data[i].Value = value
 				flgExist = 1
 			}
 		}
@@ -43,7 +43,7 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 			m := Metrics{
 				ID:    name,
 				MType: "gauge",
-				Value: value,
+				Value: &value,
 			}
 			s.Data = append(s.Data, m)
 		}
@@ -53,7 +53,7 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 		flgExist := 0
 		for i, m := range s.Data {
 			if m.ID == name {
-				s.Data[i].Delta += delta //	новое значение суммируется со старым, содержащимся в базе
+				*s.Data[i].Delta += delta //	новое значение суммируется со старым, содержащимся в базе
 				flgExist = 1
 			}
 		}
@@ -61,7 +61,7 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 			m := Metrics{
 				ID:    name,
 				MType: "counter",
-				Delta: delta,
+				Delta: &delta,
 			}
 			s.Data = append(s.Data, m)
 		}
@@ -81,7 +81,7 @@ func (s *Storage) Get(name string) (mType string, delta int64, value float64, fl
 		if m.ID == name {
 			// если метрика с искомым имененм найдена возвращаем её тип и значение, с флагом flag=1
 			//log.Println("GET return:", name, mType, delta, value, flg)
-			return m.MType, m.Delta, m.Value, 1
+			return m.MType, *m.Delta, *m.Value, 1
 		}
 	}
 	return "", 0, 0, 0 //	если метрика с искомым имененм НЕ найдена, возвращаем flag=0

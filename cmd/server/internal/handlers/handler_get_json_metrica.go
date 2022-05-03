@@ -60,7 +60,7 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 			return
 		}
 	default:
-		http.Error(w, "Something goes wrong", http.StatusInternalServerError)
+		http.Error(w, "Something goes wrong", http.StatusBadRequest)
 		return
 	}
 
@@ -68,7 +68,7 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	//	структуру JSON дополнительно описывать не надо, так как возвращаемая функцией Get структура Metrics уже имеет JSON теги
 	metricsJSON, err := json.Marshal(metrica) //	изготавливаем JSON
 	if err != nil || metricsJSON == nil {     //	в случае ошибки преобразования, выдаем http.StatusInternalServerError
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		app.ErrorLog.Println(err.Error())
 		return
 	}

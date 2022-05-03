@@ -51,7 +51,7 @@ func (app *Application) GetMetricaHandler(w http.ResponseWriter, r *http.Request
 			}
 		}
 	default:
-		http.Error(w, "Something goes wrong", http.StatusInternalServerError)
+		http.Error(w, "Something goes wrong", http.StatusBadRequest)
 		return
 	}
 }

@@ -44,7 +44,7 @@ func (app *Application) PostMetricaHandler(w http.ResponseWriter, r *http.Reques
 		err = app.Datasource.Insert(Name, Type, delta, 0)
 	}
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		app.ErrorLog.Println("URL save error:" + err.Error())
 		return
 	}

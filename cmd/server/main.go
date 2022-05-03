@@ -16,7 +16,7 @@ func main() {
 	//	3.	Значения по умолчанию.
 
 	//	Считываем флаги запуска из командной строки и задаём значения по умолчанию, если флаг при запуске не указан
-	ServerAddress := flag.String("a", "127.0.0.1:8080", "SERVER_ADDRESS - адрес запуска HTTP-сервера")
+	ServerAddress := flag.String("a", "127.0.0.1:8080", "ADDRESS - адрес запуска HTTP-сервера")
 	BaseURL := flag.String("b", "http://127.0.0.1:8080", "BASE_URL - базовый адрес результирующего сокращённого URL")
 	DatabaseDSN := flag.String("d", "", "DATABASE_DSN - адрес подключения к БД (PostgreSQL)")
 	FileStorage := flag.String("f", "", "FILE_STORAGE_PATH - путь до файла с сокращёнными URL")
@@ -25,7 +25,7 @@ func main() {
 
 	//	считываем переменные окружения
 	//	если они заданы - переопределяем соответствующие локальные переменные:
-	if u, flg := os.LookupEnv("SERVER_ADDRESS"); flg {
+	if u, flg := os.LookupEnv("ADDRESS"); flg {
 		*ServerAddress = u
 	}
 	if u, flg := os.LookupEnv("BASE_URL"); flg {

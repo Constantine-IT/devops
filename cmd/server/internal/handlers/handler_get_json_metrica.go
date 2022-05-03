@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
 	"io"
 	"net/http"
 )
@@ -24,7 +25,7 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	//	теги для JSON там уже описаны, так что дополнительного описания для парсинга не требуется
 
 	//	создаеём экземпляр структуры для заполнения из JSON
-	metrica := Metrics{}
+	metrica := storage.Metrics{}
 
 	//	парсим JSON и записываем результат в экземпляр структуры
 	err = json.Unmarshal(jsonBody, &metrica)
@@ -43,8 +44,8 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	MetricaTypeFromDB, MetricaDeltaFromDB, MetricaValueFromDB, flagIsExist := app.Datasource.Get(metrica.ID)
-	metrica.Delta = &MetricaDeltaFromDB
-	metrica.Value = &MetricaValueFromDB
+	metrica.Delta = MetricaDeltaFromDB
+	metrica.Value = MetricaValueFromDB
 
 	switch flagIsExist {
 	//	анализируем значение флага для выборки метрики

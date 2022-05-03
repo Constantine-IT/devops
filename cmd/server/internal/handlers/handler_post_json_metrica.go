@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
 	"io"
 	"net/http"
 )
@@ -21,7 +22,7 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 	//	структура storage.Metrics используется для приема и выдачи значений метрик
 	//	теги для JSON там уже описаны, так что дополнительного описания для парсинга не требуется
 
-	metrica := Metrics{}
+	metrica := storage.Metrics{}
 
 	//	парсим JSON и записываем результат в экземпляр структуры
 	err = json.Unmarshal(jsonBody, &metrica)
@@ -45,10 +46,10 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 	var errType error
 
 	if metrica.MType == "gauge" {
-		errType = app.Datasource.Insert(metrica.ID, metrica.MType, 0, *metrica.Value)
+		errType = app.Datasource.Insert(metrica.ID, metrica.MType, 0, metrica.Value)
 	}
 	if metrica.MType == "counter" {
-		errType = app.Datasource.Insert(metrica.ID, metrica.MType, *metrica.Delta, 0)
+		errType = app.Datasource.Insert(metrica.ID, metrica.MType, metrica.Delta, 0)
 	}
 	if errType != nil {
 		http.Error(w, errType.Error(), http.StatusInternalServerError)

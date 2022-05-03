@@ -24,10 +24,11 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 	if name == "" || mType == "" {
 		return ErrEmptyNotAllowed
 	}
+
 	//	Блокируем структуру храниения в оперативной памяти на время записи информации
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	//log.Println("INSERT", name, mType, delta, value)
+
 	//	сохраняем метрики в оперативной памяти в структуре Storage
 	//	каждая запись - это сопоставленная с NAME структура из (MetricaType + VALUE/DELTA) - Metrics
 
@@ -43,6 +44,7 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 			m := Metrics{
 				ID:    name,
 				MType: "gauge",
+				Delta: nil,
 				Value: &value,
 			}
 			s.Data = append(s.Data, m)
@@ -62,6 +64,7 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 				ID:    name,
 				MType: "counter",
 				Delta: &delta,
+				Value: nil,
 			}
 			s.Data = append(s.Data, m)
 		}

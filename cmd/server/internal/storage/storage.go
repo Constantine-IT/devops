@@ -100,5 +100,24 @@ func (s *Storage) GetAll() []Metrics {
 	return s.Data
 }
 
-func (s *Storage) Close() {
+func (s *Storage) Close() error {
+	//	при остановке сервера закрываем reader и writer для файла-хранилища URL
+	if err := fileReader.Close(); err != nil {
+		return err
+	}
+	if err := fileWriter.Close(); err != nil {
+		return err
+	}
+	return nil
+}
+
+//	DumpToFile - сбрасывает все метрики в файловое хранилище
+func (s *Storage) DumpToFile() error {
+	//	перебираем все строки хранилища метрик в оперативной памяти по одной и вставляем в файл-хранилище
+	for _, metrica := range s.Data {
+		if err := fileWriter.Write(&metrica); err != nil {
+			return err
+		}
+	}
+	return nil
 }

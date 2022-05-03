@@ -8,14 +8,8 @@ type Datasource interface {
 	Insert(name, mType string, delta int64, value float64) error
 	Get(name string) (mType string, delta int64, value float64, flg int)
 	GetAll() []Metrics
-	Close()
-}
-
-//	RowStorage - структура записи в хранилище метрик в оперативной памяти
-//	используется для формирования структуры Storage и метода Storage.Insert
-type MetricaRow struct {
-	mType string
-	value string
+	Close() error
+	DumpToFile() error
 }
 
 //	ErrEmptyNotAllowed - ошибка возникающая при попытке вставить пустое значение в любое поле структуры хранения URL

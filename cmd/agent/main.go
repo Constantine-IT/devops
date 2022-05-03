@@ -39,7 +39,7 @@ func main() {
 	if r, flg := os.LookupEnv("REPORT_INTERVAL"); flg {
 		*ReportInterval, _ = time.ParseDuration(r) //	конвертируеим считанный string в интервал в секундах
 	}
-	
+
 	var m runtime.MemStats
 
 	pollCounter := &PollCounter{Count: 0} // создаем экземпляр структуры счётчика сбора метрик
@@ -67,12 +67,10 @@ func main() {
 			pollCounter.mutex.Lock()
 			pollCounter.Count++
 			pollCounter.mutex.Unlock()
-			//log.Println("AGENT: Statistics renewed")
 
 		case <-reportTicker.C:
 			//	высылаем собраннуе метрики на сервер
 			sendMetrics(&m, pollCounter, *ServerAddress)
-			//log.Println("AGENT: Metrics sent to server")
 		}
 	}
 }

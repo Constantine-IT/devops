@@ -72,7 +72,7 @@ func main() {
 			pollCounter.mutex.Unlock()
 
 		case <-reportTicker.C: //	запускаем отправку метрик на сервер
-			//	высылаем собраннуе метрики на сервер
+			//	высылаем собранные метрики на сервер
 			sendMetrics(&memStatistics, pollCounter, *ServerAddress)
 		}
 	}

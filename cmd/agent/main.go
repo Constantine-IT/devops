@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"runtime"
@@ -19,13 +20,6 @@ type PollCounter struct {
 func main() {
 
 	var m runtime.MemStats
-
-	/*
-		const (
-			pollInterval   = 2 * time.Second
-			reportInterval = 10 * time.Second
-		)
-	*/
 
 	pollCounter := &PollCounter{Count: 0}
 
@@ -50,23 +44,22 @@ func main() {
 		*ReportInterval = time.Duration(rInt) * time.Second //	и зададим интервал в rInt секунд
 
 	}
-	//pollInterval := &PollInterval
-	//reportInterval := &ReportInterval
-	pollTicker := time.NewTicker(*PollInterval * time.Second)
+
+	pollTicker := time.NewTicker(*PollInterval)
 	time.Sleep(100 * time.Millisecond)
-	reportTicker := time.NewTicker(*ReportInterval * time.Second)
+	reportTicker := time.NewTicker(*ReportInterval)
 
 	signalChanel := make(chan os.Signal, 1)
 	signal.Notify(signalChanel,
 		syscall.SIGINT,
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
-
+	log.Println("AGENT metrics collector START")
 	for {
 		select {
 		case s := <-signalChanel:
 			if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
-				//log.Println("AGENT metrics collector shutdown normal")
+				log.Println("AGENT metrics collector (code 0) SHUTDOWN")
 				os.Exit(0)
 			}
 		case <-pollTicker.C:

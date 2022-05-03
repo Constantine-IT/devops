@@ -211,7 +211,6 @@ func TestHandlersResponse(t *testing.T) {
 	app := &Application{
 		ErrorLog:   log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile),
 		InfoLog:    log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime),
-		BaseURL:    "http://127.0.0.1:8080",
 		Datasource: &storage.Storage{Data: make([]storage.Metrics, 0)},
 	}
 

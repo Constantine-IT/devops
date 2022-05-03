@@ -30,47 +30,50 @@ func main() {
 
 	//	считываем переменные окружения
 	//	если они заданы - переопределяем соответствующие локальные переменные:
-	if aString, flg := os.LookupEnv("ADDRESS"); flg {
-		*ServerAddress = aString
+	if addrString, flg := os.LookupEnv("ADDRESS"); flg {
+		*ServerAddress = addrString
 	}
-	if p, flg := os.LookupEnv("POLL_INTERVAL"); flg {
-		*PollInterval, _ = time.ParseDuration(p) //	конвертируеим считанный string в интервал в секундах
+	if pollString, flg := os.LookupEnv("POLL_INTERVAL"); flg {
+		*PollInterval, _ = time.ParseDuration(pollString) //	конвертируеим считанный string в интервал в секундах
 	}
-	if r, flg := os.LookupEnv("REPORT_INTERVAL"); flg {
-		*ReportInterval, _ = time.ParseDuration(r) //	конвертируеим считанный string в интервал в секундах
+	if reportString, flg := os.LookupEnv("REPORT_INTERVAL"); flg {
+		*ReportInterval, _ = time.ParseDuration(reportString) //	конвертируеим считанный string в интервал в секундах
 	}
 
-	var m runtime.MemStats
+	var memStatistics runtime.MemStats //	экземпляр структуры для сохранения статистических данных
 
-	pollCounter := &PollCounter{Count: 0} // создаем экземпляр структуры счётчика сбора метрик
+	pollCounter := &PollCounter{Count: 0} //	экземпляр структуры счётчика сбора метрик с mutex
 
-	pollTicker := time.NewTicker(*PollInterval)
+	pollTicker := time.NewTicker(*PollInterval) //	тикер для выдачи сигналов на пересбор статистики
 	time.Sleep(100 * time.Millisecond)
-	reportTicker := time.NewTicker(*ReportInterval)
+	reportTicker := time.NewTicker(*ReportInterval) //	тикер для выдачи сигнала на отправку статистики на сервер
 
+	//	сиоздаём сигнальный канал для отслеживания системных команд на закрытие приложения
 	signalChanel := make(chan os.Signal, 1)
 	signal.Notify(signalChanel,
 		syscall.SIGINT,
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
+
 	log.Println("AGENT metrics collector START")
-	for {
+
+	for { // отслеживаем сигналы от созданных тикеров и сигнальных каналов, и реагируем на них соответственно
 		select {
-		case s := <-signalChanel:
+		case s := <-signalChanel: //	при получении сигнала на закрытие приложения - делаем os.Exit со статусом 0
 			if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
 				log.Println("AGENT metrics collector (code 0) SHUTDOWN")
 				os.Exit(0)
 			}
-		case <-pollTicker.C:
+		case <-pollTicker.C: //	запускаем пересбор статистики
 			//	считываем статиститку и увеличиваем счетчик считываний на 1
-			runtime.ReadMemStats(&m)
+			runtime.ReadMemStats(&memStatistics)
 			pollCounter.mutex.Lock()
 			pollCounter.Count++
 			pollCounter.mutex.Unlock()
 
-		case <-reportTicker.C:
+		case <-reportTicker.C: //	запускаем отправку метрик на сервер
 			//	высылаем собраннуе метрики на сервер
-			sendMetrics(&m, pollCounter, *ServerAddress)
+			sendMetrics(&memStatistics, pollCounter, *ServerAddress)
 		}
 	}
 }

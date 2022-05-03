@@ -6,7 +6,6 @@ import (
 	"log"
 	"math/rand"
 	"runtime"
-	"time"
 )
 
 type Metrics struct {
@@ -52,17 +51,17 @@ func sendMetrics(m *runtime.MemStats, pollCounter *PollCounter, serverAddress st
 
 	// Create a resty client
 	client := resty.New()
-	client.RetryCount = 3
-	client.RetryWaitTime = 1 * time.Second
+	//client.RetryCount = 3
+	//client.RetryWaitTime = 1 * time.Second
 
 	//	высылаем на сервер все метрики типа gauge
-	//var delta int64 = 0
-	//var value float64 = 0
+	var delta int64 = 0
+	var value float64 = 0
 
 	for name, row := range gaugeMetrics {
 		metrica := Metrics{ID: name,
 			MType: "gauge",
-			Delta: nil,
+			Delta: &delta,
 			Value: &row}
 		sendPostMetrica(metrica, client, serverAddress)
 	}
@@ -71,7 +70,7 @@ func sendMetrics(m *runtime.MemStats, pollCounter *PollCounter, serverAddress st
 	metrica := Metrics{ID: "PollCount",
 		MType: "counter",
 		Delta: &pollCounter.Count,
-		Value: nil,
+		Value: &value,
 	}
 	sendPostMetrica(metrica, client, serverAddress)
 
@@ -89,11 +88,11 @@ func sendPostMetrica(metrica Metrics, client *resty.Client, serverAddress string
 	}
 
 	// POST JSON string
-	_, err = client.R().
+	_, _ = client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(metricsJSON).
 		Post("http://" + serverAddress + "/update/")
-	if err != nil {
-		log.Println(err.Error())
-	}
+	//if err != nil {
+	//	log.Println(err.Error())
+	//}
 }

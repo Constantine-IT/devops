@@ -80,13 +80,13 @@ func main() {
 	//	при остановке сервера отложенно закроем все источники данных
 	defer app.Datasource.Close()
 
-	//	запуск сервера
 	srv := &http.Server{
 		Addr:     *ServerAddress,
 		ErrorLog: app.ErrorLog,
 		Handler:  app.Routes(),
 	}
-	go func() {
+	go func() { //	запуск сервера с конфигурацией srv
+		log.Println("SERVER configuration. \n   ADDRESS: ", *ServerAddress, "\n   STORE_FILE: ", *StoreFile, "\n   STORE_INTERVAL: ", *StoreInterval, "\n   RESTORE: ", *RestoreOnStart)
 		log.Fatal(srv.ListenAndServe())
 	}()
 	infoLog.Printf("Server started at address: %s", *ServerAddress)
@@ -110,6 +110,9 @@ func main() {
 		select {
 		case s := <-signalChanel:
 			if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
+				//	перед завершением работы сервера - сохраняем все метрики в файл
+				_ = app.Datasource.DumpToFile()
+				log.Println("All metrics were written to file:", *StoreFile)
 				log.Println("SERVER metrics collector (code 0) SHUTDOWN")
 				os.Exit(0)
 			}

@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -19,23 +20,41 @@ func main() {
 
 	var m runtime.MemStats
 
-	const (
-		pollInterval   = 2 * time.Second
-		reportInterval = 10 * time.Second
-	)
+	/*
+		const (
+			pollInterval   = 2 * time.Second
+			reportInterval = 10 * time.Second
+		)
+	*/
 
 	pollCounter := &PollCounter{Count: 0}
 
 	//	Считываем флаги запуска из командной строки и задаём значения по умолчанию, если флаг при запуске не указан
-	ServerAddress := flag.String("a", "127.0.0.1:8080", "SERVER_ADDRESS - адрес сервера-агрегатора метрик")
+	ServerAddress := flag.String("a", "127.0.0.1:8080", "ADDRESS - адрес сервера-агрегатора метрик")
+	PollInterval := flag.Duration("p", 2*time.Second, "POLL_INTERVAL - интервал обновления метрик (сек.)")
+	ReportInterval := flag.Duration("r", 10*time.Second, "REPORT_INTERVAL - интервал отправки метрик на сервер (сне.)")
 	//	парсим флаги
 	flag.Parse()
 
-	//log.Println("AGENT: metrics collector start")
+	//	считываем переменные окружения
+	//	если они заданы - переопределяем соответствующие локальные переменные:
+	if aString, flg := os.LookupEnv("ADDRESS"); flg {
+		*ServerAddress = aString
+	}
+	if pString, flg := os.LookupEnv("POLL_INTERVAL"); flg {
+		pInt, _ := strconv.Atoi(pString)                  //	LookupEnv всегда считывает тип string - преобразуем его в int
+		*PollInterval = time.Duration(pInt) * time.Second //	и зададим интервал в pInt секунд
+	}
+	if rString, flg := os.LookupEnv("REPORT_INTERVAL"); flg {
+		rInt, _ := strconv.Atoi(rString)                    //	LookupEnv всегда считывает тип string - преобразуем его в int
+		*ReportInterval = time.Duration(rInt) * time.Second //	и зададим интервал в rInt секунд
 
-	pollTicker := time.NewTicker(pollInterval)
+	}
+	//pollInterval := &PollInterval
+	//reportInterval := &ReportInterval
+	pollTicker := time.NewTicker(*PollInterval * time.Second)
 	time.Sleep(100 * time.Millisecond)
-	reportTicker := time.NewTicker(reportInterval)
+	reportTicker := time.NewTicker(*ReportInterval * time.Second)
 
 	signalChanel := make(chan os.Signal, 1)
 	signal.Notify(signalChanel,

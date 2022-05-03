@@ -50,6 +50,6 @@ func (app *Application) PostMetricaHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Изготавливаем и возвращаем ответ c http.StatusOK
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	// w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 }

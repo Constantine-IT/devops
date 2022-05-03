@@ -92,7 +92,7 @@ func TestHandlersResponse(t *testing.T) {
 			body:        "",
 			want: want{
 				statusCode:  http.StatusOK,
-				contentType: "text/plain; charset=utf-8",
+				contentType: "",
 				body:        "",
 			},
 		},
@@ -136,7 +136,7 @@ func TestHandlersResponse(t *testing.T) {
 			body:        `{"id":"Alloc", "type":"gauge"}`,
 			want: want{
 				statusCode:  http.StatusOK,
-				contentType: "text/plain; charset=utf-8",
+				contentType: "",
 				body:        ``,
 			},
 		},
@@ -147,7 +147,7 @@ func TestHandlersResponse(t *testing.T) {
 			body:        `{"id":"HeapReleased", "type":"gauge", "value":2695168.000000}`,
 			want: want{
 				statusCode:  http.StatusOK,
-				contentType: "text/plain; charset=utf-8",
+				contentType: "",
 				body:        ``,
 			},
 		},
@@ -169,7 +169,7 @@ func TestHandlersResponse(t *testing.T) {
 			body:        `{"id":"HeapCount", "type":"counter", "delta":111111}`,
 			want: want{
 				statusCode:  http.StatusOK,
-				contentType: "text/plain; charset=utf-8",
+				contentType: "",
 				body:        ``,
 			},
 		},
@@ -191,7 +191,7 @@ func TestHandlersResponse(t *testing.T) {
 			body:        `{"id":"HeapCount", "type":"counter", "delta":111111}`,
 			want: want{
 				statusCode:  http.StatusOK,
-				contentType: "text/plain; charset=utf-8",
+				contentType: "",
 				body:        ``,
 			},
 		},

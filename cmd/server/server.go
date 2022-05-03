@@ -56,7 +56,8 @@ func main() {
 			}
 		}
 	*/
-	if u, flg := os.LookupEnv("POLL_INTERVAL"); flg {
+	if u, flg := os.LookupEnv("STORE_INTERVAL"); flg {
+		log.Println("ENV:   STORE_INTERVAL set to: ", u)
 		*StoreInterval, _ = time.ParseDuration(u) //	конвертируеим считанный string в интервал в секундах
 	}
 	if u, flg := os.LookupEnv("RESTORE"); flg {
@@ -69,6 +70,7 @@ func main() {
 		}
 	}
 	if u, flg := os.LookupEnv("DATABASE_DSN"); flg {
+		log.Println("ENV:   DATABASE_DSN set to: ", u)
 		*DatabaseDSN = u
 	}
 

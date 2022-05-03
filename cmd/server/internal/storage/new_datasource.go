@@ -1,9 +1,6 @@
 package storage
 
 import (
-	//	github.com/jackc/pgx/stdlib - драйвер PostgreSQL для доступа к БД с использованием пакета database/sql
-	//	если хотим работать с БД напрямую, без database/sql надо использовать пакет - github.com/jackc/pgx/v4
-	"errors"
 	_ "github.com/jackc/pgx/stdlib"
 	"log"
 )
@@ -11,7 +8,8 @@ import (
 // NewDatasource - функция конструктор, инициализирующая хранилище URL и интерфейсы работы с файлом, хранящим URL
 func NewDatasource(databaseDSN, storeFile string, restoreOnStart bool) (strg Datasource, err error) {
 	if databaseDSN != "" {
-		return nil, errors.New("couldn't connect to DataBase")
+		// return nil, errors.New("couldn't connect to DataBase")
+		log.Println("database is not supported yet in our server")
 	}
 	s := Storage{Data: make([]Metrics, 0)}
 	strg = &s

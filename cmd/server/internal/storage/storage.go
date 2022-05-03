@@ -4,12 +4,12 @@ import (
 	"sync"
 )
 
-//	Metrics - структура для хранения метрик и обмена данными между сервером и агентом
+//	Metrics - структура для хранения метрик
 type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	ID    string  `json:"id"`              // имя метрики
+	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
 //	Storage - структура хранилища метрик для работы в оперативной памяти
@@ -32,41 +32,43 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 	//	сохраняем метрики в оперативной памяти в структуре Storage
 	//	каждая запись - это сопоставленная с NAME структура из (MetricaType + VALUE/DELTA) - Metrics
 
-	if mType == "gauge" { //	для метрик типа GAUGE повторные вставки затирают предыдущие значения
-		flgExist := 0
-		for i, m := range s.Data {
-			if m.ID == name {
-				*s.Data[i].Value = value
-				flgExist = 1
+	if mType == "gauge" { //	для метрик типа GAUGE повторные вставки заменяют предыдущие значения
+		flgExist := 0 //	изначально предполагаем, что такой метрики у нас в базе нет
+
+		for i, m := range s.Data { //	ищем метрику в базе
+			if m.ID == name { //	если метрика уже существует в базе, то для метрик типа GAUGE
+				s.Data[i].Value = value //	новое значение заменяют предыдущие значения
+				flgExist = 1            //	выставляем флаг, чтобы пропустить создание новой метрики
 			}
 		}
-		if flgExist == 0 {
+		if flgExist == 0 { //	если метрики в базе не существует, то создаем для неё новую запись
 			m := Metrics{
 				ID:    name,
 				MType: "gauge",
-				Delta: nil,
-				Value: &value,
+				Delta: 0,
+				Value: value,
 			}
-			s.Data = append(s.Data, m)
+			s.Data = append(s.Data, m) //	добавляем созданную новую запись в базу
 		}
 	}
 
 	if mType == "counter" { //	для метрик типа COUNT повторные вставки НЕ затирают предыдущие значения
-		flgExist := 0
-		for i, m := range s.Data {
-			if m.ID == name {
-				*s.Data[i].Delta += delta //	новое значение суммируется со старым, содержащимся в базе
-				flgExist = 1
+		flgExist := 0 //	изначально предполагаем, что такой метрики у нас в базе нет
+
+		for i, m := range s.Data { //	ищем метрику в базе
+			if m.ID == name { //	если метрика уже существует в базе, то для метрик типа COUNT
+				s.Data[i].Delta += delta //	новое значение суммируется со старым
+				flgExist = 1             //	выставляем флаг, чтобы пропустить создание новой метрики
 			}
 		}
-		if flgExist == 0 {
+		if flgExist == 0 { //	если метрики в базе не существует, то создаем для неё новую запись
 			m := Metrics{
 				ID:    name,
 				MType: "counter",
-				Delta: &delta,
-				Value: nil,
+				Delta: delta,
+				Value: 0,
 			}
-			s.Data = append(s.Data, m)
+			s.Data = append(s.Data, m) //	добавляем созданную новую запись в базу
 		}
 	}
 	return nil
@@ -84,7 +86,7 @@ func (s *Storage) Get(name string) (mType string, delta int64, value float64, fl
 		if m.ID == name {
 			// если метрика с искомым имененм найдена возвращаем её тип и значение, с флагом flag=1
 			//log.Println("GET return:", name, mType, delta, value, flg)
-			return m.MType, *m.Delta, *m.Value, 1
+			return m.MType, m.Delta, m.Value, 1
 		}
 	}
 	return "", 0, 0, 0 //	если метрика с искомым имененм НЕ найдена, возвращаем flag=0

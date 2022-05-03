@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
 	"io"
 	"net/http"
 )
@@ -25,7 +24,7 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	//	теги для JSON там уже описаны, так что дополнительного описания для парсинга не требуется
 
 	//	создаеём экземпляр структуры для заполнения из JSON
-	metrica := storage.Metrics{}
+	metrica := Metrics{}
 
 	//	парсим JSON и записываем результат в экземпляр структуры
 	err = json.Unmarshal(jsonBody, &metrica)

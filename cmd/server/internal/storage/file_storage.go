@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"os"
 	"sync"
 )
 
-//	Структуры и методы работы с файлом-хранилищем URL
+//	Структуры и методы работы с файлом-хранилищем метрик
 
 //	fileWriter и fileReader - рабочие экземпляры файловых дескрипторов чтения и записи
 var fileWriter *writer
@@ -82,31 +83,44 @@ func (c *reader) Close() error {
 	return c.file.Close()
 }
 
-//	InitialFulfilment - метод первичного заполнения хранилища URL из файла сохраненных URL, при старте сервера
+//	InitialFulfilment - метод первичного заполнения хранилища метрик из файла-хранилища, при старте сервера
 func InitialFulfilment(s *Storage) error {
-	//	блокируем хранилище URL в оперативной памяти на время заливки данных
+	//	блокируем хранилище в оперативной памяти на время заливки данных
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	for { //	считываем записи по одной из файла-хранилища HASH + <original_URL> + UserID + IsDeleted
-		addMetrica := true
+	for { //	считываем записи по одной из файла-хранилища
+		addMetrica := true //	флаг, показывающий, будем ли добавлять метрику в хранилище
 		metrica, err := fileReader.Read()
 		//	когда дойдем до конца файла - выходим из цикла чтения
 		if errors.Is(err, io.EOF) {
+			log.Println("FILE_STORE load due to InitialFulfilment process - complete successful")
 			break
 		}
 		if err != nil {
-			return nil
-			//return err
+			log.Println("FILE_STORE read error due to InitialFulfilment process")
+			break
 		}
-		//	добавляем считанную метрику в хранилище в оперативной памяти - Storage
+		//	добавляем считанную метрику в хранилище в оперативной памяти - storage.Storage
 		for _, m := range s.Data {
 			if m.ID == metrica.ID {
-				addMetrica = false
+				addMetrica = false //	если метрика уже есть в хранилище, выставляем флаг на пропуск этой метрики
+				break
 			}
 		}
-		if addMetrica {
+		if addMetrica { //	метрики с флагом = true - добавялем в хранилище
 			s.Data = append(s.Data, *metrica)
+		}
+	}
+	return nil
+}
+
+//	DumpToFile - сбрасывает все метрики в файловое хранилище, затирая его содержимое новой информацией
+func DumpToFile(s *Storage) error {
+	//	перебираем все строки хранилища метрик в оперативной памяти по одной и вставляем в файл-хранилище
+	for _, m := range s.Data {
+		if err := fileWriter.Write(&m); err != nil {
+			return err
 		}
 	}
 	return nil

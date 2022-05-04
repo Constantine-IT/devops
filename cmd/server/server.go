@@ -32,11 +32,12 @@ func main() {
 	if u, flg := os.LookupEnv("ADDRESS"); flg { //	ADDRESS — адрес запуска HTTP-сервера
 		*ServerAddress = u
 	}
-	if u, flg := os.LookupEnv("KEY"); flg { //	KEY - ключ подписи передаваемых метрик
-		*KeyToSign = u
+	if u, flg := os.LookupEnv("DATABASE_DSN"); flg { //	DATABASE_DSN — адрес подключения к БД (PostgreSQL)
+		*DatabaseDSN = u
 	}
 	if u, flg := os.LookupEnv("STORE_FILE"); flg { //	STORE_FILE — путь до файла с сокращёнными метриками
 		*StoreFile = u
+		*DatabaseDSN = ""
 	}
 	if u, flg := os.LookupEnv("STORE_INTERVAL"); flg { //	STORE_INTERVAL — интервал сброса показания сервера на диск
 		*StoreInterval, _ = time.ParseDuration(u) //	конвертируеим считанный string в интервал в секундах
@@ -48,8 +49,8 @@ func main() {
 			*RestoreOnStart = true
 		}
 	}
-	if u, flg := os.LookupEnv("DATABASE_DSN"); flg { //	DATABASE_DSN — адрес подключения к БД (PostgreSQL)
-		*DatabaseDSN = u
+	if u, flg := os.LookupEnv("KEY"); flg { //	KEY - ключ подписи передаваемых метрик
+		*KeyToSign = u
 	}
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)                  // logger для информационных сообщений

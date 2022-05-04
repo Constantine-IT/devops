@@ -18,49 +18,33 @@ func main() {
 	//	2.	Значения, задаваемые флагами при запуске из консоли
 	//	3.	Значения по умолчанию.
 
-	//STORE_INTERVAL (по умолчанию 300) — интервал времени в секундах,
-	//по истечении которого текущие показания сервера сбрасываются на диск
-	//(значение 0 — делает запись синхронной).
-
-	//STORE_FILE (по умолчанию "/tmp/devops-metrics-db.json") — строка, имя файла, где хранятся значения
-	//(пустое значение — отключает функцию записи на диск).
-
-	//RESTORE (по умолчанию true) — булево значение (true/false),
-	//определяющее, загружать или нет начальные значения из указанного файла при старте сервера.
-
-	//	Считываем флаги запуска из командной строки и задаём значения по умолчанию, если флаг при запуске не указан
+	//	Считываем и парсим флаги запуска из командной строки и задаём значения по умолчанию, если флаг при запуске не указан
 	ServerAddress := flag.String("a", "127.0.0.1:8080", "ADDRESS — адрес запуска HTTP-сервера")
+	KeyToSign := flag.String("k", "", "KEY - ключ подписи передаваемых метрик")
 	StoreFile := flag.String("f", "/tmp/devops-metrics-db.json", "STORE_FILE — путь до файла с сокращёнными метриками")
 	StoreInterval := flag.Duration("i", 300*time.Second, "STORE_INTERVAL — интервал сброса показания сервера на диск")
 	RestoreOnStart := flag.Bool("r", true, "RESTORE — определяет, загружать ли метрики файла при старте сервера")
 	DatabaseDSN := flag.String("d", "", "DATABASE_DSN — адрес подключения к БД (PostgreSQL)")
-	//	парсим флаги
 	flag.Parse()
 
 	//	считываем переменные окружения
 	//	если они заданы - переопределяем соответствующие локальные переменные:
-	if u, flg := os.LookupEnv("ADDRESS"); flg {
+	if u, flg := os.LookupEnv("ADDRESS"); flg { //	ADDRESS — адрес запуска HTTP-сервера
 		log.Println("ENV:   ADDRESS set to: ", u)
 		*ServerAddress = u
 	}
-	if u, flg := os.LookupEnv("STORE_FILE"); flg {
+	if u, flg := os.LookupEnv("KEY"); flg { //	KEY - ключ подписи передаваемых метрик
+		*KeyToSign = u
+	}
+	if u, flg := os.LookupEnv("STORE_FILE"); flg { //	STORE_FILE — путь до файла с сокращёнными метриками
 		log.Println("ENV:   STORE_FILE set to: ", u)
 		*StoreFile = u
 	}
-	/*
-		if u, flg := os.LookupEnv("STORE_INTERVAL"); flg {
-			if strIntrvl, err := strconv.Atoi(u); err != nil { //	конвертируем считанный string в int
-				log.Println("ENV:   error with parsing STORE_INTERVAL")
-			} else {
-				*StoreInterval = strIntrvl
-			}
-		}
-	*/
-	if u, flg := os.LookupEnv("STORE_INTERVAL"); flg {
+	if u, flg := os.LookupEnv("STORE_INTERVAL"); flg { //	STORE_INTERVAL — интервал сброса показания сервера на диск
 		log.Println("ENV:   STORE_INTERVAL set to: ", u)
 		*StoreInterval, _ = time.ParseDuration(u) //	конвертируеим считанный string в интервал в секундах
 	}
-	if u, flg := os.LookupEnv("RESTORE"); flg {
+	if u, flg := os.LookupEnv("RESTORE"); flg { //	RESTORE — определяет, загружать ли метрики файла при старте сервера
 		if u == "false" { //	если флаг равен FALSE, то присвоим переменной значение FALSE
 			log.Println("ENV:   RESTORE set to FALSE")
 			*RestoreOnStart = false
@@ -69,17 +53,15 @@ func main() {
 			*RestoreOnStart = true
 		}
 	}
-	if u, flg := os.LookupEnv("DATABASE_DSN"); flg {
+	if u, flg := os.LookupEnv("DATABASE_DSN"); flg { //	DATABASE_DSN — адрес подключения к БД (PostgreSQL)
 		log.Println("ENV:   DATABASE_DSN set to: ", u)
 		*DatabaseDSN = u
 	}
 
-	//	инициализируем logger для информационных сообщений
-	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	//	инициализируем logger для сообщений об ошибках
-	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
-	//	инициализируем источники данных нашего приложения для работы с URL
-	datasource, err := storage.NewDatasource(*DatabaseDSN, *StoreFile, *RestoreOnStart)
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)                  // logger для информационных сообщений
+	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile) // logger для сообщений об ошибках
+
+	datasource, err := storage.NewDatasource(*DatabaseDSN, *StoreFile, *RestoreOnStart) // источник данных нашего приложения
 	if err != nil {
 		errorLog.Fatal(err)
 	}
@@ -88,6 +70,7 @@ func main() {
 	app := &handlers.Application{
 		ErrorLog:   errorLog,   //	журнал ошибок
 		InfoLog:    infoLog,    //	журнал информационных сообщений
+		KeyToSign:  *KeyToSign, //	ключ для подписи метрик по алгоритму SHA256
 		Datasource: datasource, //	источник данных для хранения URL
 	}
 
@@ -95,24 +78,25 @@ func main() {
 	defer app.Datasource.Close()
 
 	srv := &http.Server{
-		Addr:     *ServerAddress,
-		ErrorLog: app.ErrorLog,
-		Handler:  app.Routes(),
+		Addr:     *ServerAddress, //	адрес запуска сервера
+		ErrorLog: app.ErrorLog,   //	журнал ошибок сервера
+		Handler:  app.Routes(),   //	маршрутизатор сервера
 	}
 	go func() { //	запуск сервера с конфигурацией srv
-		log.Println("SERVER configuration. \n   ADDRESS: ", *ServerAddress, "\n   STORE_FILE: ", *StoreFile, "\n   STORE_INTERVAL: ", *StoreInterval, "\n   RESTORE: ", *RestoreOnStart)
+		log.Println("SERVER configuration. \n   ADDRESS: ", *ServerAddress, "\n DATABASE_DSN: ", *DatabaseDSN)
+		log.Println("\n   STORE_FILE: ", *StoreFile, "\n   STORE_INTERVAL: ", *StoreInterval)
+		log.Println("\n   RESTORE: ", *RestoreOnStart, "\n KEY for Signature: ", *KeyToSign)
 		log.Fatal(srv.ListenAndServe())
 	}()
 	infoLog.Printf("Server started at address: %s", *ServerAddress)
 
-	// создаём тикер, подающий раз в StoreInterval секунд, сигнал на запись метрик в файл
 	if *StoreInterval <= 0 {
 		*StoreInterval = 1
 	}
-	fileWriteInterval := time.Duration(*StoreInterval)
-	fileWriteTicker := time.NewTicker(fileWriteInterval * time.Second)
+	// создаём тикер, подающий раз в StoreInterval секунд, сигнал на запись метрик в файл
+	fileWriteTicker := time.NewTicker(*StoreInterval * time.Second)
 
-	// создаём сигнальный канал для лтслеживания системных сигналов на остановку сервера
+	// создаём сигнальный канал для отслеживания системных сигналов на остановку сервера
 	signalChanel := make(chan os.Signal, 1)
 	signal.Notify(signalChanel,
 		syscall.SIGINT,

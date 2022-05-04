@@ -1,21 +1,25 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"github.com/go-resty/resty/v2"
 	"log"
 	"math/rand"
 	"runtime"
 )
 
+//	Metrics - структура для обмена информацией о метриках между сервером и агентами мониторинга
 type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	ID    string  `json:"id"`              // имя метрики
+	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Hash  string  `json:"hash,omitempty"`  // значение хеш-функции
 }
 
-func sendMetrics(m *runtime.MemStats, pollCounter *PollCounter, serverAddress string) {
+func sendMetrics(m runtime.MemStats, pollCount int64, serverAddress, KeyToSign string) {
 
 	gaugeMetrics := make(map[string]float64)
 
@@ -49,35 +53,39 @@ func sendMetrics(m *runtime.MemStats, pollCounter *PollCounter, serverAddress st
 	gaugeMetrics["TotalAlloc"] = float64(m.TotalAlloc)
 	gaugeMetrics["RandomValue"] = rand.Float64()
 
-	// Create a resty client
+	// создаём клиента для отправки метрик на сервер
 	client := resty.New()
-	//client.RetryCount = 3
-	//client.RetryWaitTime = 1 * time.Second
 
-	//	высылаем на сервер все метрики типа gauge
-	var delta int64 = 0
-	var value float64 = 0
-
-	for name, row := range gaugeMetrics {
-		metrica := Metrics{ID: name,
+	for name, row := range gaugeMetrics { //	пробегаем по всем метрикам типа gauge
+		metrica := Metrics{ //	изготавливаем структуру для отправки данных
+			ID:    name,
 			MType: "gauge",
-			Delta: &delta,
-			Value: &row}
-		sendPostMetrica(metrica, client, serverAddress)
+			Delta: 0,
+			Value: row,
+		}
+		if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись SHA256
+			hash256 := sha256.Sum256([]byte(fmt.Sprintf("%s:gauge:%f:key:%s", metrica.ID, metrica.Value, KeyToSign)))
+			metrica.Hash = fmt.Sprintf("%X", hash256)
+		}
+
+		sendPostMetrica(metrica, client, serverAddress) //	отправляем метрику на сервер
 	}
 
-	//	высылаем на сервер все метрики типа counter
-	metrica := Metrics{ID: "PollCount",
+	//	пробегаем по всем метрикам типа counter
+
+	metrica := Metrics{ //	изготавливаем структуру для отправки данных
+		ID:    "PollCount",
 		MType: "counter",
-		Delta: &pollCounter.Count,
-		Value: &value,
+		Delta: pollCount,
+		Value: 0,
 	}
-	sendPostMetrica(metrica, client, serverAddress)
+	if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись SHA256
+		hash256 := sha256.Sum256([]byte(fmt.Sprintf("%s:counter:%d:key:%s", metrica.ID, metrica.Delta, KeyToSign)))
+		metrica.Hash = fmt.Sprintf("%X", hash256)
+	}
 
-	//	в завершении передачи метрик, сбрасываем счетчик циклов измерения при передаче данных
-	pollCounter.mutex.Lock()
-	pollCounter.Count = 0
-	pollCounter.mutex.Unlock()
+	sendPostMetrica(metrica, client, serverAddress) //	отправляем метрику на сервер
+
 }
 
 func sendPostMetrica(metrica Metrics, client *resty.Client, serverAddress string) {
@@ -87,7 +95,7 @@ func sendPostMetrica(metrica Metrics, client *resty.Client, serverAddress string
 		log.Println("couldn't marshal metrica JSON")
 	}
 
-	// POST JSON string
+	// отправляем метрику на сервер через JSON API
 	_, _ = client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(metricsJSON).

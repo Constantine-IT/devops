@@ -1,8 +1,9 @@
 package handlers
 
 import (
+	"crypto/sha256"
 	"encoding/json"
-	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -22,7 +23,7 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 	//	структура storage.Metrics используется для приема и выдачи значений метрик
 	//	теги для JSON там уже описаны, так что дополнительного описания для парсинга не требуется
 
-	metrica := storage.Metrics{}
+	metrica := Metrics{}
 
 	//	парсим JSON и записываем результат в экземпляр структуры
 	err = json.Unmarshal(jsonBody, &metrica)
@@ -32,11 +33,28 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 		app.ErrorLog.Println("JSON body parsing error:" + err.Error())
 		return
 	}
-	//log.Println("incoming for UPDATE ==>", metrica)
+
+	//	проверяем тип метрики - допускается только gauge и counter
 	if metrica.MType != "gauge" && metrica.MType != "counter" {
 		http.Error(w, "only GAUGE or COUNTER metrica TYPES are allowed", http.StatusNotImplemented)
 		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica TYPES are allowed")
 		return
+	}
+
+	if app.KeyToSign != "" { //	если ключ для подписи метрик задан на сервере, проверяем подпись входящей метрики
+		var hash256 [32]byte
+		if metrica.MType == "counter" {
+			hash256 = sha256.Sum256([]byte(fmt.Sprintf("%s:counter:%d:key:%s", metrica.ID, metrica.Delta, app.KeyToSign)))
+		}
+		if metrica.MType == "gauge" {
+			hash256 = sha256.Sum256([]byte(fmt.Sprintf("%s:gauge:%f:key:%s", metrica.ID, metrica.Value, app.KeyToSign)))
+		}
+		metricaHash := fmt.Sprintf("%X", hash256)
+		if metrica.Hash != metricaHash {
+			http.Error(w, "HASH signature of metrica is NOT valid for uor server", http.StatusBadRequest)
+			app.ErrorLog.Println("HASH signature of metrica is NOT valid for uor server")
+			return
+		}
 	}
 
 	//	сохраняем в базу связку MetricaName + MetricaType + MetricaValue
@@ -56,8 +74,7 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 		app.ErrorLog.Println("URL save error:" + errType.Error())
 		return
 	}
-	//log.Println("UPDATE successful")
-	// Изготавливаем и возвращаем ответ c http.StatusOK
-	// w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
+	//	высылаем ответ - http.StatusOK
 	w.WriteHeader(http.StatusOK)
 }

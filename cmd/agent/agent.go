@@ -23,6 +23,7 @@ func main() {
 	//	3.	Значения по умолчанию.
 	//	Считываем флаги запуска из командной строки и задаём значения по умолчанию, если флаг при запуске не указан
 	ServerAddress := flag.String("a", "127.0.0.1:8080", "ADDRESS - адрес сервера-агрегатора метрик")
+	KeyToSign := flag.String("k", "", "KEY - ключ подписи передаваемых метрик")
 	PollInterval := flag.Duration("p", 2*time.Second, "POLL_INTERVAL - интервал обновления метрик (сек.)")
 	ReportInterval := flag.Duration("r", 10*time.Second, "REPORT_INTERVAL - интервал отправки метрик на сервер (сне.)")
 	//	парсим флаги
@@ -32,6 +33,9 @@ func main() {
 	//	если они заданы - переопределяем соответствующие локальные переменные:
 	if addrString, flg := os.LookupEnv("ADDRESS"); flg {
 		*ServerAddress = addrString
+	}
+	if keyString, flg := os.LookupEnv("KEY"); flg {
+		*KeyToSign = keyString
 	}
 	if pollString, flg := os.LookupEnv("POLL_INTERVAL"); flg {
 		*PollInterval, _ = time.ParseDuration(pollString) //	конвертируеим считанный string в интервал в секундах
@@ -73,7 +77,32 @@ func main() {
 
 		case <-reportTicker.C: //	запускаем отправку метрик на сервер
 			//	высылаем собранные метрики на сервер
-			sendMetrics(&memStatistics, pollCounter, *ServerAddress)
+			pollCounter.mutex.Lock()
+			sendMetrics(memStatistics, pollCounter.Count, *ServerAddress, *KeyToSign)
+			//	после передачи метрик, сбрасываем счетчик циклов измерения метрик
+			pollCounter.Count = 0
+			pollCounter.mutex.Unlock()
 		}
 	}
 }
+
+/* for increment14
+package main
+
+import (
+    "fmt"
+
+    "github.com/shirou/gopsutil/v3/mem"
+    // "github.com/shirou/gopsutil/mem"  // to use v2
+)
+
+func main() {
+    v, _ := mem.VirtualMemory()
+
+    // almost every return value is a struct
+    fmt.Printf("Total: %v, Free:%v, UsedPercent:%f%%\n", v.Total, v.Free, v.UsedPercent)
+
+    // convert to JSON. String() is also implemented
+    fmt.Println(v)
+}
+*/

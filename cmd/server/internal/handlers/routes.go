@@ -9,11 +9,21 @@ import (
 	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
 )
 
-//	конфигурация приложения SERVER
+//	Application - структура для конфигурации приложения SERVER
 type Application struct {
 	ErrorLog   *log.Logger        //	журнал ошибок
 	InfoLog    *log.Logger        //	журнал информационных сообщений
+	KeyToSign  string             //	ключ для подписи метрик по алгоритму SHA256
 	Datasource storage.Datasource //	источник данных для хранения URL
+}
+
+//	Metrics - структура для обмена информацией о метриках между сервером и агентами мониторинга
+type Metrics struct {
+	ID    string  `json:"id"`              // имя метрики
+	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Hash  string  `json:"hash,omitempty"`  // значение хеш-функции
 }
 
 func (app *Application) Routes() chi.Router {

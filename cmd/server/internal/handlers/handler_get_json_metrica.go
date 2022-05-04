@@ -1,8 +1,9 @@
 package handlers
 
 import (
+	"crypto/sha256"
 	"encoding/json"
-	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -25,7 +26,7 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	//	теги для JSON там уже описаны, так что дополнительного описания для парсинга не требуется
 
 	//	создаеём экземпляр структуры для заполнения из JSON
-	metrica := storage.Metrics{}
+	metrica := Metrics{}
 
 	//	парсим JSON и записываем результат в экземпляр структуры
 	err = json.Unmarshal(jsonBody, &metrica)
@@ -44,8 +45,6 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	MetricaTypeFromDB, MetricaDeltaFromDB, MetricaValueFromDB, flagIsExist := app.Datasource.Get(metrica.ID)
-	metrica.Delta = MetricaDeltaFromDB
-	metrica.Value = MetricaValueFromDB
 
 	switch flagIsExist {
 	//	анализируем значение флага для выборки метрики
@@ -66,6 +65,19 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 
 	//	если метрика в базе найдена (flagIsExist = 1), то преобразуем её структуру в JSON и вставляем в тело ответа
 	//	структуру JSON дополнительно описывать не надо, так как возвращаемая функцией Get структура Metrics уже имеет JSON теги
+	metrica.Delta = MetricaDeltaFromDB
+	metrica.Value = MetricaValueFromDB
+	if app.KeyToSign != "" { //	если ключ для изготовления подписи задан на сервере, вставляем в метрику подпись SHA256
+		var hash256 [32]byte
+		if metrica.MType == "counter" {
+			hash256 = sha256.Sum256([]byte(fmt.Sprintf("%s:counter:%d:key:%s", metrica.ID, metrica.Delta, app.KeyToSign)))
+		}
+		if metrica.MType == "gauge" {
+			hash256 = sha256.Sum256([]byte(fmt.Sprintf("%s:gauge:%f:key:%s", metrica.ID, metrica.Value, app.KeyToSign)))
+		}
+		metrica.Hash = fmt.Sprintf("%X", hash256)
+	}
+
 	metricsJSON, err := json.Marshal(metrica) //	изготавливаем JSON
 	if err != nil || metricsJSON == nil {     //	в случае ошибки преобразования, выдаем http.StatusInternalServerError
 		http.Error(w, err.Error(), http.StatusBadRequest)

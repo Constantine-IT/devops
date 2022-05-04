@@ -54,8 +54,9 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 		hash256 := h.Sum([]byte(app.KeyToSign))   //	добавляем ключ KEY к вычисленному HASH
 		metricaHash := fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string
 		if metrica.Hash != metricaHash {
-			http.Error(w, "HASH signature of metrica is NOT valid for uor server", http.StatusBadRequest)
-			app.ErrorLog.Println("HASH signature of metrica is NOT valid for uor server")
+			http.Error(w, "HASH signature of metrica is NOT valid for our server", http.StatusBadRequest)
+			app.ErrorLog.Println("HASH signature of metrica is NOT valid for our server")
+			app.ErrorLog.Println("ID: ", metrica.ID, "\nTYPE: ", metrica.MType, "\nVALUE: ", metrica.Value, "\nDELTA: ", metrica.Delta)
 			return
 		}
 	}

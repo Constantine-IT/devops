@@ -59,7 +59,7 @@ func main() {
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
 
-	log.Println("AGENT metrics collector START")
+	log.Println("AGENT - metrics collector STARTED with configuration:\n   ADDRESS: ", *ServerAddress, "\n   POLL_INTERVAL: ", *PollInterval, "\n   REPORT_INTERVAL: ", *ReportInterval, "\n   KEY for Signature: ", *KeyToSign)
 
 	for { // отслеживаем сигналы от созданных тикеров и сигнальных каналов, и реагируем на них соответственно
 		select {

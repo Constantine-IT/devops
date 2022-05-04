@@ -55,6 +55,7 @@ func (app *Application) Routes() chi.Router {
 		r.Post("/value/", app.GetJSONMetricaHandler)
 		r.Post("/value", app.GetJSONMetricaHandler)
 		r.Get("/value/{MetricaType}/{MetricaName}", app.GetMetricaHandler)
+		r.Get("/ping", app.PingDataBaseHandler)
 		r.Get("/", app.GetAllMetricsHandler)
 	})
 

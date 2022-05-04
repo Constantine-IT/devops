@@ -83,12 +83,9 @@ func main() {
 		Handler:  app.Routes(),   //	маршрутизатор сервера
 	}
 	go func() { //	запуск сервера с конфигурацией srv
-		log.Println("SERVER configuration. \n   ADDRESS: ", *ServerAddress, "\n DATABASE_DSN: ", *DatabaseDSN)
-		log.Println("\n   STORE_FILE: ", *StoreFile, "\n   STORE_INTERVAL: ", *StoreInterval)
-		log.Println("\n   RESTORE: ", *RestoreOnStart, "\n KEY for Signature: ", *KeyToSign)
+		log.Println("SERVER - metrics collector STARTED with configuration:\n   ADDRESS: ", *ServerAddress, "\n   DATABASE_DSN: ", *DatabaseDSN, "\n   STORE_FILE: ", *StoreFile, "\n   STORE_INTERVAL: ", *StoreInterval, "\n   RESTORE: ", *RestoreOnStart, "\n   KEY for Signature: ", *KeyToSign)
 		log.Fatal(srv.ListenAndServe())
 	}()
-	infoLog.Printf("Server started at address: %s", *ServerAddress)
 
 	if *StoreInterval <= 0 {
 		*StoreInterval = 1

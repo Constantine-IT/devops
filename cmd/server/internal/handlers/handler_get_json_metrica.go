@@ -68,14 +68,17 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	metrica.Delta = MetricaDeltaFromDB
 	metrica.Value = MetricaValueFromDB
 	if app.KeyToSign != "" { //	если ключ для изготовления подписи задан на сервере, вставляем в метрику подпись SHA256
-		var hash256 [32]byte
+		//	создаём интерфейс хеширования по алгоритму SHA256
+		h := sha256.New()
+		//	считаем HASH по разному для метрик типа counter и gauge
 		if metrica.MType == "counter" {
-			hash256 = sha256.Sum256([]byte(fmt.Sprintf("%s:counter:%d:key:%s", metrica.ID, metrica.Delta, app.KeyToSign)))
+			h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, metrica.Delta)))
 		}
 		if metrica.MType == "gauge" {
-			hash256 = sha256.Sum256([]byte(fmt.Sprintf("%s:gauge:%f:key:%s", metrica.ID, metrica.Value, app.KeyToSign)))
+			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, metrica.Value)))
 		}
-		metrica.Hash = fmt.Sprintf("%X", hash256)
+		hash256 := h.Sum([]byte(app.KeyToSign))   //	добавляем ключ KEY к вычисленному HASH
+		metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
 	}
 
 	metricsJSON, err := json.Marshal(metrica) //	изготавливаем JSON

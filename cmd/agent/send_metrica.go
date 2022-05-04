@@ -64,8 +64,11 @@ func sendMetrics(m runtime.MemStats, pollCount int64, serverAddress, KeyToSign s
 			Value: row,
 		}
 		if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись SHA256
-			hash256 := sha256.Sum256([]byte(fmt.Sprintf("%s:gauge:%f:key:%s", metrica.ID, metrica.Value, KeyToSign)))
-			metrica.Hash = fmt.Sprintf("%X", hash256)
+			h := sha256.New() //	создаём интерфейс хеширования по алгоритму SHA256
+			//	считаем HASH для метрики типа gauge
+			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, metrica.Value)))
+			hash256 := h.Sum([]byte(KeyToSign))       //	добавляем ключ KEY к вычисленному HASH
+			metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
 		}
 
 		sendPostMetrica(metrica, client, serverAddress) //	отправляем метрику на сервер
@@ -79,9 +82,13 @@ func sendMetrics(m runtime.MemStats, pollCount int64, serverAddress, KeyToSign s
 		Delta: pollCount,
 		Value: 0,
 	}
+
 	if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись SHA256
-		hash256 := sha256.Sum256([]byte(fmt.Sprintf("%s:counter:%d:key:%s", metrica.ID, metrica.Delta, KeyToSign)))
-		metrica.Hash = fmt.Sprintf("%X", hash256)
+		h := sha256.New() //	создаём интерфейс хеширования по алгоритму SHA256
+		//	считаем HASH для метрики типа counter
+		h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, metrica.Delta)))
+		hash256 := h.Sum([]byte(KeyToSign))       //	добавляем ключ KEY к вычисленному HASH
+		metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
 	}
 
 	sendPostMetrica(metrica, client, serverAddress) //	отправляем метрику на сервер

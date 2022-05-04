@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -41,17 +42,16 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if app.KeyToSign != "" { //	если ключ для подписи метрик задан на сервере, проверяем подпись входящей метрики
-		//	создаём интерфейс хеширования по алгоритму SHA256
-		h := sha256.New()
-		//	считаем HASH по разному для метрик типа counter и gauge
+	if app.KeyToSign != "" { //	если ключ для изготовления подписи задан, вычисляем для метрики подпись HMAC c SHA256
+		h := hmac.New(sha256.New, []byte(app.KeyToSign)) //	создаём интерфейс подписи с хешированием
+		//	формируем фразу для хеширования по разному шаблону для метрик типа counter и gauge
 		if metrica.MType == "counter" {
 			h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, metrica.Delta)))
 		}
 		if metrica.MType == "gauge" {
 			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, metrica.Value)))
 		}
-		hash256 := h.Sum([]byte(app.KeyToSign))   //	добавляем ключ KEY к вычисленному HASH
+		hash256 := h.Sum(nil)                     //	вычисляем HASH для метрики
 		metricaHash := fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string
 		if metrica.Hash != metricaHash {
 			http.Error(w, "HASH signature of metrica is NOT valid for our server", http.StatusBadRequest)

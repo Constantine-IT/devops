@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -67,17 +68,16 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	//	структуру JSON дополнительно описывать не надо, так как возвращаемая функцией Get структура Metrics уже имеет JSON теги
 	metrica.Delta = MetricaDeltaFromDB
 	metrica.Value = MetricaValueFromDB
-	if app.KeyToSign != "" { //	если ключ для изготовления подписи задан на сервере, вставляем в метрику подпись SHA256
-		//	создаём интерфейс хеширования по алгоритму SHA256
-		h := sha256.New()
-		//	считаем HASH по разному для метрик типа counter и gauge
+	if app.KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись HMAC c SHA256
+		h := hmac.New(sha256.New, []byte(app.KeyToSign)) //	создаём интерфейс подписи с хешированием
+		//	формируем фразу для хеширования по разному шаблону для метрик типа counter и gauge
 		if metrica.MType == "counter" {
 			h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, metrica.Delta)))
 		}
 		if metrica.MType == "gauge" {
 			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, metrica.Value)))
 		}
-		hash256 := h.Sum([]byte(app.KeyToSign))   //	добавляем ключ KEY к вычисленному HASH
+		hash256 := h.Sum(nil)                     //	вычисляем HASH для метрики
 		metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
 	}
 

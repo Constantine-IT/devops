@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -63,11 +64,11 @@ func sendMetrics(m runtime.MemStats, pollCount int64, serverAddress, KeyToSign s
 			Delta: 0,
 			Value: row,
 		}
-		if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись SHA256
-			h := sha256.New() //	создаём интерфейс хеширования по алгоритму SHA256
-			//	считаем HASH для метрики типа gauge
+		if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись HMAC c SHA256
+			h := hmac.New(sha256.New, []byte(KeyToSign)) //	создаём интерфейс подписи с хешированием
+			//	формируем фразу для хеширования метрики по шаблону типа gauge
 			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, metrica.Value)))
-			hash256 := h.Sum([]byte(KeyToSign))       //	добавляем ключ KEY к вычисленному HASH
+			hash256 := h.Sum(nil)                     //	вычисляем HASH для метрики
 			metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
 		}
 
@@ -83,11 +84,11 @@ func sendMetrics(m runtime.MemStats, pollCount int64, serverAddress, KeyToSign s
 		Value: 0,
 	}
 
-	if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись SHA256
-		h := sha256.New() //	создаём интерфейс хеширования по алгоритму SHA256
-		//	считаем HASH для метрики типа counter
+	if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись HMAC c SHA256
+		h := hmac.New(sha256.New, []byte(KeyToSign)) //	создаём интерфейс подписи с хешированием
+		//	формируем фразу для хеширования метрики по шаблону типа counter
 		h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, metrica.Delta)))
-		hash256 := h.Sum([]byte(KeyToSign))       //	добавляем ключ KEY к вычисленному HASH
+		hash256 := h.Sum(nil)                     //	вычисляем HASH для метрики
 		metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
 	}
 

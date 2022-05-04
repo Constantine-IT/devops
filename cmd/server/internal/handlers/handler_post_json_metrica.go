@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 )
 
@@ -70,8 +69,7 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 
 	if metrica.MType == "gauge" {
 		if metrica.Value == 0 {
-			log.Println("METRICA - ", metrica.ID, "was received with ZERO value")
-			metrica.Value = 0.000000001
+			metrica.Value = 0.0000000001
 		}
 		errType = app.Datasource.Insert(metrica.ID, metrica.MType, 0, metrica.Value)
 	}

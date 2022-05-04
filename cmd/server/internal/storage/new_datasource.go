@@ -32,7 +32,7 @@ func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, r
 			stmt := `create table if not exists "metrics" (
 									"name" TEXT constraint name_pk primary key not null,
 			   						"type" TEXT not null,
-			   						"delta" INT not null,
+			   						"delta" BIGINT not null,
 			                        "value" DOUBLE PRECISION not null)`
 			_, err := d.DB.Exec(stmt)
 			if err != nil { //	при ошибке в создании структур хранения в базе данных, прерываем работу конструктора

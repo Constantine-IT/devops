@@ -109,5 +109,4 @@ func (d *Database) GetAll() (result []Metrics) {
 func (d *Database) Close() {
 	//	при остановке сервера закрываем connect с базой данных
 	_ = d.DB.Close()
-	return
 }

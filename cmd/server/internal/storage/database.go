@@ -15,26 +15,59 @@ func (d *Database) Insert(name, mType string, delta int64, value float64) error 
 		return ErrEmptyNotAllowed
 	}
 
-	//	начинаем тразакцию
-	tx, err := d.DB.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() //	при ошибке выполнения - откатываем транзакцию
+	var Name, Type string
+	var Delta int64
+	var Value float64
+	var Flag int
 
-	//	готовим SQL-statement для вставки в базу
-	stmt, err := tx.Prepare(`insert into "metrics" ("name", "type", "delta", "value") values ($1, $2, $3, $4)`)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
+	Type, Delta, Value, Flag = d.Get(name)
+	if Flag == 1 { //	если метрика с таким именем уже содержится в нашей базе данных
+		if Type == "counter" { //	для метрик типа counter новое значение прибавляется к старому
+			Delta = Delta + delta
+		}
+		//	начинаем тразакцию
+		tx, err := d.DB.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback() //	при ошибке выполнения - откатываем транзакцию
 
-	//	 запускаем SQL-statement на исполнение
-	if _, err := stmt.Exec(name, mType, delta, value); err != nil {
-		return err
-	}
+		//	готовим SQL-statement для обновления значений метрики в базе данных
+		stmt, err := tx.Prepare(`update "metrics" set "delta" = $1, "value" = $2 where "name" = $3`)
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
 
-	return tx.Commit() //	при успешном выполнении вставки - фиксируем транзакцию
+		//	 запускаем SQL-statement на исполнение передавая в него параметры метрики
+		if _, err := stmt.Exec(Delta, Value, Name); err != nil {
+			return err
+		}
+
+		return tx.Commit() //	при успешном выполнении вставки - фиксируем транзакцию
+	}
+	if Flag == 0 { //	если метрики с таким именем нет в нашей базе данных
+		//	начинаем тразакцию
+		tx, err := d.DB.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback() //	при ошибке выполнения - откатываем транзакцию
+
+		//	готовим SQL-statement для вставки в базу новой метрики
+		stmt, err := tx.Prepare(`insert into "metrics" ("name", "type", "delta", "value") values ($1, $2, $3, $4)`)
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		//	 запускаем SQL-statement на исполнение
+		if _, err := stmt.Exec(name, mType, delta, value); err != nil {
+			return err
+		}
+
+		return tx.Commit() //	при успешном выполнении вставки - фиксируем транзакцию
+	}
 	return nil
 }
 

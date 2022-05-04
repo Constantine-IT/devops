@@ -64,7 +64,7 @@ func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, r
 					return nil, err
 				}
 			}
-			go func() {                 //	запускаем отдельный воркер - записи метрик в файл на периодической основе
+			go func() { //	запускаем отдельный воркер - записи метрик в файл на периодической основе
 				if storeInterval <= 0 { //	минимальный интервал сброса дампа метрик в файл - 1 секунда
 					storeInterval = 1
 				}
@@ -74,16 +74,15 @@ func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, r
 
 				// запускаем слежение за каналами тикера записи в файл
 				for {
-					select {
-					case <-fileWriteTicker.C:
-						//	пишем метрики в файл
-						if err := DumpToFile(&s); err != nil {
-							log.Println("SERVER metrics collector unable to write to file - (code 1) SHUTDOWN")
-							os.Exit(1)
-						}
-						log.Println("All metrics were written to file:", storeFile)
+					<-fileWriteTicker.C
+					//	пишем метрики в файл
+					if err := DumpToFile(&s); err != nil {
+						log.Println("SERVER metrics collector unable to write to file - (code 1) SHUTDOWN")
+						os.Exit(1)
 					}
+					log.Println("All metrics were written to file:", storeFile)
 				}
+
 			}()
 		}
 	}

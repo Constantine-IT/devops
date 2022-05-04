@@ -91,14 +91,13 @@ func main() {
 
 	//	запускаем процесс слежение за сигналами на останов сервера
 	for {
-		select {
-		case s := <-signalChanel:
-			if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
-				// в случае корректного останова сервера - закрываем все структуры хранения
-				app.Datasource.Close()
-				log.Println("SERVER metrics collector (code 0) SHUTDOWN")
-				os.Exit(0)
-			}
+		s := <-signalChanel
+		if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
+			// в случае корректного останова сервера - закрываем все структуры хранения
+			app.Datasource.Close()
+			log.Println("SERVER metrics collector (code 0) SHUTDOWN")
+			os.Exit(0)
 		}
 	}
+
 }

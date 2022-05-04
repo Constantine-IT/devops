@@ -37,7 +37,6 @@ func main() {
 	}
 	if u, flg := os.LookupEnv("STORE_FILE"); flg { //	STORE_FILE — путь до файла с сокращёнными метриками
 		*StoreFile = u
-		*DatabaseDSN = ""
 	}
 	if u, flg := os.LookupEnv("STORE_INTERVAL"); flg { //	STORE_INTERVAL — интервал сброса показания сервера на диск
 		*StoreInterval, _ = time.ParseDuration(u) //	конвертируеим считанный string в интервал в секундах
@@ -53,6 +52,9 @@ func main() {
 		*KeyToSign = u
 	}
 
+	if *StoreFile != "/tmp/devops-metrics-db.json" { //	для автотестов использующих файл, а не БД
+		*DatabaseDSN = "" //	чтобы не возникало конфликтов с БД
+	}
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)                  // logger для информационных сообщений
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile) // logger для сообщений об ошибках
 

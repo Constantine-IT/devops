@@ -2,14 +2,15 @@ package main
 
 import (
 	"flag"
-	"github.com/Constantine-IT/devops/cmd/server/internal/handlers"
-	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/Constantine-IT/devops/cmd/server/internal/handlers"
+	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
 )
 
 func main() {

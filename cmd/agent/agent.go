@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/Constantine-IT/devops/cmd/agent/internal"
 	"log"
 	"os"
 	"os/signal"
@@ -89,7 +90,7 @@ func main() {
 			<-reportTicker.C
 			//	высылаем собранные метрики на сервер
 			pollCounter.mutex.Lock()
-			sendMetrics(memStatistics, GopStatistics, pollCounter.Count, *ServerAddress, *KeyToSign)
+			internal.SendMetrics(memStatistics, GopStatistics, pollCounter.Count, *ServerAddress, *KeyToSign)
 			//	после передачи метрик, сбрасываем счетчик циклов измерения метрик
 			pollCounter.Count = 0
 			pollCounter.mutex.Unlock()

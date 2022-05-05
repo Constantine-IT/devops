@@ -1,15 +1,16 @@
-package main
+package internal
 
 import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"github.com/go-resty/resty/v2"
-	"github.com/shirou/gopsutil/v3/mem"
 	"log"
 	"math/rand"
 	"runtime"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 //	Metrics - структура для обмена информацией о метриках между сервером и агентами мониторинга
@@ -21,7 +22,7 @@ type Metrics struct {
 	Hash  string  `json:"hash,omitempty"`  // значение хеш-функции
 }
 
-func sendMetrics(m runtime.MemStats, g mem.VirtualMemoryStat, pollCount int64, serverAddress, KeyToSign string) {
+func SendMetrics(m runtime.MemStats, g mem.VirtualMemoryStat, pollCount int64, serverAddress, KeyToSign string) {
 
 	// создаём срез для хранения метрик
 	gaugeMetrics := make(map[string]float64)

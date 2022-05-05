@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -14,7 +15,7 @@ import (
 
 func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-
+	log.Println("ONE metrica GET")
 	var err error
 	jsonBody, err := io.ReadAll(r.Body) // считываем JSON из тела запроса
 	if err != nil {
@@ -87,7 +88,7 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 		app.ErrorLog.Println(err.Error())
 		return
 	}
-	
+
 	//	формируем ответ с http.StatusOK и метрикой в теле ответа в виде JSON
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

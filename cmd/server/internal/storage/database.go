@@ -15,15 +15,11 @@ func (d *Database) Insert(name, mType string, delta int64, value float64) error 
 		return ErrEmptyNotAllowed
 	}
 
-	var Name, Type string
-	var Delta int64
-	var Value float64
-	var Flag int
-
-	Type, Delta, Value, Flag = d.Get(name)
+	//	проверяем, есть ли метрика с таким именем в нашей базе
+	Type, Delta, _, Flag := d.Get(name)
 	if Flag == 1 { //	если метрика с таким именем уже содержится в нашей базе данных
 		if Type == "counter" { //	для метрик типа counter новое значение прибавляется к старому
-			Delta = Delta + delta
+			delta = delta + Delta
 		}
 		//	начинаем тразакцию
 		tx, err := d.DB.Begin()
@@ -33,20 +29,20 @@ func (d *Database) Insert(name, mType string, delta int64, value float64) error 
 		defer tx.Rollback() //	при ошибке выполнения - откатываем транзакцию
 
 		//	готовим SQL-statement для обновления значений метрики в базе данных
-		stmt, err := tx.Prepare(`update "metrics" set "delta" = $1, "value" = $2 where "name" = $3`)
+		stmt, err := tx.Prepare(`update "metrics" set "type" = $1, "delta" = $2, "value" = $3 where "name" = $4`)
 		if err != nil {
 			return err
 		}
 		defer stmt.Close()
 
 		//	 запускаем SQL-statement на исполнение передавая в него параметры метрики
-		if _, err := stmt.Exec(Delta, Value, Name); err != nil {
+		if _, err := stmt.Exec(mType, delta, value, name); err != nil {
 			return err
 		}
 
 		return tx.Commit() //	при успешном выполнении вставки - фиксируем транзакцию
 	}
-	if Flag == 0 { //	если метрики с таким именем нет в нашей базе данных
+	if Flag == 0 { //	если метрики с таким именем в нашей базе данных НЕТ
 		//	начинаем тразакцию
 		tx, err := d.DB.Begin()
 		if err != nil {

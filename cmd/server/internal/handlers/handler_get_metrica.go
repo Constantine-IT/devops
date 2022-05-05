@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
@@ -11,7 +10,6 @@ import (
 //	GetMetricaHandler - обработчик GET - возвращает значение метикрики по данным из
 //	PATH = "/value/{MetricaType}/{MetricaName}"
 func (app *Application) GetMetricaHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("ONE metrica GET")
 	//	считываем имя метрики и тип метрики из PATH входящего запроса
 	Name := chi.URLParam(r, "MetricaName")
 	Type := chi.URLParam(r, "MetricaType")

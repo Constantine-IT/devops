@@ -6,14 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 )
 
 //	PostJSONMetricaHandler - обработчик POST /update/ принимает значение метрики в формате JSON со структурой Metrics
 func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	log.Println("OME metrica UPDATE")
+
 	var err error
 	jsonBody, err := io.ReadAll(r.Body) // считываем JSON из тела запроса
 	if err != nil {

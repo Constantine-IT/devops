@@ -52,10 +52,13 @@ func main() {
 	pollCounter := &PollCounter{Count: 0} //	экземпляр структуры счётчика сбора метрик с mutex
 
 	pollTicker := time.NewTicker(*PollInterval) //	тикер для выдачи сигналов на пересбор статистики RUNTIME
-	gopTicker := time.NewTicker(*PollInterval)  //	тикер для выдачи сигналов на пересбор статистики GOPSUTIL
+	defer pollTicker.Stop()
+	gopTicker := time.NewTicker(*PollInterval) //	тикер для выдачи сигналов на пересбор статистики GOPSUTIL
+	defer gopTicker.Stop()
 	//	вводим задержку, чтобы сбор статистики не выпадал на отправку статистики на сервер
 	time.Sleep(*PollInterval / 2)
 	reportTicker := time.NewTicker(*ReportInterval) //	тикер для выдачи сигнала на отправку статистики на сервер
+	defer reportTicker.Stop()
 
 	//	выводим в лог конфигурацию агента
 	log.Println("AGENT - metrics collector STARTED with configuration:\n   ADDRESS: ", *ServerAddress, "\n   POLL_INTERVAL: ", *PollInterval, "\n   REPORT_INTERVAL: ", *ReportInterval, "\n   KEY for Signature: ", *KeyToSign)

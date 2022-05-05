@@ -23,7 +23,7 @@ type Metrics struct {
 func sendMetrics(m runtime.MemStats, pollCount int64, serverAddress, KeyToSign string) {
 
 	gaugeMetrics := make(map[string]float64)
-
+	MetricaArray := make([]Metrics, 0)
 	//	заполняем массив с метриками статистикой, собранной ранее в структуру runtime.MemStats
 	gaugeMetrics["Alloc"] = float64(m.Alloc)
 	gaugeMetrics["BuckHashSys"] = float64(m.BuckHashSys)
@@ -72,7 +72,9 @@ func sendMetrics(m runtime.MemStats, pollCount int64, serverAddress, KeyToSign s
 			metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
 		}
 
-		sendPostMetrica(metrica, client, serverAddress) //	отправляем метрику на сервер
+		//	добавляем сформированную метрику в массив для отправки на сервер
+		MetricaArray = append(MetricaArray, metrica)
+		// sendPostMetrica(metrica, client, serverAddress) //	отправляем метрику на сервер
 	}
 
 	//	пробегаем по всем метрикам типа counter
@@ -92,23 +94,26 @@ func sendMetrics(m runtime.MemStats, pollCount int64, serverAddress, KeyToSign s
 		metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
 	}
 
-	sendPostMetrica(metrica, client, serverAddress) //	отправляем метрику на сервер
+	//	добавляем сформированную метрику в массив для отправки на сервер
+	MetricaArray = append(MetricaArray, metrica)
+
+	sendPostMetrica(MetricaArray, client, serverAddress) //	отправляем метрику на сервер
 
 }
 
-func sendPostMetrica(metrica Metrics, client *resty.Client, serverAddress string) {
+func sendPostMetrica(MetricaArray []Metrics, client *resty.Client, serverAddress string) {
 	//	изготавливаем JSON
-	metricsJSON, err := json.Marshal(metrica)
+	metricsJSON, err := json.Marshal(MetricaArray)
 	if err != nil || metricsJSON == nil {
 		log.Println("couldn't marshal metrica JSON")
 	}
 
 	// отправляем метрику на сервер через JSON API
-	_, _ = client.R().
+	_, err = client.R().
 		SetHeader("Content-Type", "application/json").
 		SetBody(metricsJSON).
-		Post("http://" + serverAddress + "/update/")
-	//if err != nil {
-	//	log.Println(err.Error())
-	//}
+		Post("http://" + serverAddress + "/updates/")
+	if err != nil {
+		log.Println(err.Error())
+	}
 }

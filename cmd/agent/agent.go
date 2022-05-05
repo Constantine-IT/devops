@@ -52,36 +52,43 @@ func main() {
 	time.Sleep(100 * time.Millisecond)
 	reportTicker := time.NewTicker(*ReportInterval) //	тикер для выдачи сигнала на отправку статистики на сервер
 
-	//	сиоздаём сигнальный канал для отслеживания системных команд на закрытие приложения
-	signalChanel := make(chan os.Signal, 1)
-	signal.Notify(signalChanel,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-
 	log.Println("AGENT - metrics collector STARTED with configuration:\n   ADDRESS: ", *ServerAddress, "\n   POLL_INTERVAL: ", *PollInterval, "\n   REPORT_INTERVAL: ", *ReportInterval, "\n   KEY for Signature: ", *KeyToSign)
 
-	for { // отслеживаем сигналы от созданных тикеров и сигнальных каналов, и реагируем на них соответственно
-		select {
-		case s := <-signalChanel: //	при получении сигнала на закрытие приложения - делаем os.Exit со статусом 0
-			if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
-				log.Println("AGENT metrics collector (code 0) SHUTDOWN")
-				os.Exit(0)
-			}
-		case <-pollTicker.C: //	запускаем пересбор статистики
+	go func() { //	запускаем пересбор статистики раз в POLL_INTERVAL
+		for {
+			<-pollTicker.C
 			//	считываем статиститку и увеличиваем счетчик считываний на 1
 			runtime.ReadMemStats(&memStatistics)
-			pollCounter.mutex.Lock()
+			pollCounter.mutex.Lock() //	чуть позже заменим на атомарную операцию
 			pollCounter.Count++
 			pollCounter.mutex.Unlock()
-
-		case <-reportTicker.C: //	запускаем отправку метрик на сервер
+		}
+	}()
+	go func() { //	запускаем отправку метрик на сервер раз в REPORT_INTERVAL
+		for {
+			<-reportTicker.C
 			//	высылаем собранные метрики на сервер
 			pollCounter.mutex.Lock()
 			sendMetrics(memStatistics, pollCounter.Count, *ServerAddress, *KeyToSign)
 			//	после передачи метрик, сбрасываем счетчик циклов измерения метрик
 			pollCounter.Count = 0
 			pollCounter.mutex.Unlock()
+		}
+	}()
+
+	// создаём сигнальный канал для отслеживания системных вызовов на остановку агента
+	signalChanel := make(chan os.Signal, 1)
+	signal.Notify(signalChanel,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+
+	//	запускаем процесс слежение за сигналами на останов агента
+	for {
+		s := <-signalChanel //	при получении сигнала на закрытие приложения - делаем os.Exit со статусом 0
+		if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
+			log.Println("AGENT metrics collector (code 0) SHUTDOWN")
+			os.Exit(0)
 		}
 	}
 }

@@ -1,5 +1,11 @@
 package storage
 
+import (
+	"errors"
+	"io"
+	"log"
+)
+
 //	Методы для работы с данными в структуре в оперативной памяти - Storage
 
 // Insert - Метод для сохранения метрик
@@ -91,9 +97,40 @@ func (s *Storage) GetAll() (result []Metrics) {
 func (s *Storage) Close() { //	при остановке сервера
 	if fileWriter != nil { //	если открыт файл-хранилище
 		//	 сбрасываем содержимое структур оперативной памяти в файл
-		_ = DumpToFile(s)
+		DumpToFile(s)
 		// закрываем reader и writer для файла-хранилища
-		_ = fileReader.Close()
-		_ = fileWriter.Close()
+		fileReader.Close()
+		fileWriter.Close()
+	}
+}
+
+//	InitialFulfilment - метод первичного заполнения хранилища метрик из файла-хранилища, при старте сервера
+func (s *Storage) InitialFulfilment() {
+	//	блокируем хранилище в оперативной памяти на время заливки данных
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	for { //	считываем записи по одной из файла-хранилища
+		addMetrica := true //	флаг, показывающий, будем ли добавлять метрику в хранилище
+		metrica, err := fileReader.Read()
+		//	когда дойдем до конца файла - выходим из цикла чтения
+		if errors.Is(err, io.EOF) {
+			log.Println("initial load metrics from file - SUCCESS")
+			break
+		}
+		if err != nil {
+			log.Println("file read error due to InitialFulfilment process")
+			break
+		}
+		//	добавляем считанную метрику в хранилище в оперативной памяти - storage.Storage
+		for _, m := range s.Data {
+			if m.ID == metrica.ID {
+				addMetrica = false //	если метрика уже есть в хранилище, выставляем флаг на пропуск этой метрики
+				break
+			}
+		}
+		if addMetrica { //	метрики с флагом = true - добавялем в хранилище
+			s.Data = append(s.Data, *metrica)
+		}
 	}
 }

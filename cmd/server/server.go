@@ -53,9 +53,11 @@ func main() {
 		*KeyToSign = u
 	}
 
-	if *StoreFile != "/tmp/devops-metrics-db.json" { //	для автотестов использующих файл, а не БД
-		*DatabaseDSN = "" //	чтобы не возникало конфликтов с БД
-	}
+	/*
+		if *StoreFile != "/tmp/devops-metrics-db.json" { //	для автотестов использующих файл, а не БД
+			*DatabaseDSN = "" //	чтобы не возникало конфликтов с БД
+		}
+	*/
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)                  // logger для информационных сообщений
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile) // logger для сообщений об ошибках
 

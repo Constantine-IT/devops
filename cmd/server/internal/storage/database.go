@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	_ "github.com/jackc/pgx/stdlib"
+	"io"
+	"log"
 )
 
 //	Методы для работы с данными в структуре базы данных - Database
@@ -104,5 +106,22 @@ func (d *Database) GetAll() (result []Metrics) {
 //	Close - метод закрытия структур хранения
 func (d *Database) Close() {
 	//	при остановке сервера закрываем connect с базой данных
-	_ = d.DB.Close()
+	d.DB.Close()
+}
+
+//	InitialFulfilment - метод первичного заполнения хранилища метрик из файла-хранилища, при старте сервера
+func (s *Database) InitialFulfilment() {
+	for { //	считываем записи по одной из файла-хранилища
+		metrica, err := fileReader.Read()
+		//	когда дойдем до конца файла - выходим из цикла чтения
+		if errors.Is(err, io.EOF) {
+			log.Println("initial load metrics from file - SUCCESS")
+			break
+		}
+		if err != nil {
+			log.Println("file read error due to InitialFulfilment process")
+			break
+		}
+		s.Insert(metrica.ID, metrica.MType, metrica.Delta, metrica.Value)
+	}
 }

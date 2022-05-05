@@ -13,6 +13,7 @@ type Datasource interface {
 	Get(name string) (mType string, delta int64, value float64, flg int)
 	GetAll() (result []Metrics)
 	Close()
+	InitialFulfilment()
 }
 
 //	Database - структура хранилища метрик, обертывающая пул подключений к базе данных

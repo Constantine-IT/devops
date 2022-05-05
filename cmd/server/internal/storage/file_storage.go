@@ -2,9 +2,6 @@ package storage
 
 import (
 	"encoding/json"
-	"errors"
-	"io"
-	"log"
 	"os"
 	"sync"
 )
@@ -81,38 +78,6 @@ func (c *reader) Read() (*Metrics, error) {
 // Close - метод закрытия файла для экземпляра файлового дескриптора для чтения
 func (c *reader) Close() error {
 	return c.file.Close()
-}
-
-//	InitialFulfilment - метод первичного заполнения хранилища метрик из файла-хранилища, при старте сервера
-func InitialFulfilment(s *Storage) error {
-	//	блокируем хранилище в оперативной памяти на время заливки данных
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	for { //	считываем записи по одной из файла-хранилища
-		addMetrica := true //	флаг, показывающий, будем ли добавлять метрику в хранилище
-		metrica, err := fileReader.Read()
-		//	когда дойдем до конца файла - выходим из цикла чтения
-		if errors.Is(err, io.EOF) {
-			log.Println("initial load metrics from file - SUCCESS")
-			break
-		}
-		if err != nil {
-			log.Println("file read error due to InitialFulfilment process")
-			break
-		}
-		//	добавляем считанную метрику в хранилище в оперативной памяти - storage.Storage
-		for _, m := range s.Data {
-			if m.ID == metrica.ID {
-				addMetrica = false //	если метрика уже есть в хранилище, выставляем флаг на пропуск этой метрики
-				break
-			}
-		}
-		if addMetrica { //	метрики с флагом = true - добавялем в хранилище
-			s.Data = append(s.Data, *metrica)
-		}
-	}
-	return nil
 }
 
 //	DumpToFile - сбрасывает все метрики в файловое хранилище, затирая его содержимое новой информацией

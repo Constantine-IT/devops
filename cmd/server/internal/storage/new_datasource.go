@@ -56,13 +56,6 @@ func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, r
 				return nil, err
 			}
 
-			//	если включена опция RESTORE - производим первичное заполнение хранилища метрик в оперативной памяти из файла
-			if restoreOnStart {
-				err := InitialFulfilment(&s)
-				if err != nil { //	при ошибке первичного заполнения хранилища URL, прерываем работу конструктора
-					return nil, err
-				}
-			}
 			go func() { //	запускаем отдельный воркер - записи метрик в файл на периодической основе
 				if storeInterval <= 0 { //	минимальный интервал сброса дампа метрик в файл - 1 секунда
 					storeInterval = 1
@@ -85,6 +78,9 @@ func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, r
 			}()
 		}
 	}
-
+	//	если включена опция RESTORE - производим первичное заполнение хранилища метрик из файла
+	if restoreOnStart {
+		strg.InitialFulfilment()
+	}
 	return strg, nil //	если всё прошло ОК, то возращаем выбранный источник данных
 }

@@ -94,11 +94,11 @@ func InitialFulfilment(s *Storage) error {
 		metrica, err := fileReader.Read()
 		//	когда дойдем до конца файла - выходим из цикла чтения
 		if errors.Is(err, io.EOF) {
-			log.Println("FILE_STORE load due to InitialFulfilment process - complete successful")
+			log.Println("initial load metrics from file - SUCCESS")
 			break
 		}
 		if err != nil {
-			log.Println("FILE_STORE read error due to InitialFulfilment process")
+			log.Println("file read error due to InitialFulfilment process")
 			break
 		}
 		//	добавляем считанную метрику в хранилище в оперативной памяти - storage.Storage

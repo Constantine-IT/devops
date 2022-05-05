@@ -59,7 +59,6 @@ func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, r
 			//	если включена опция RESTORE - производим первичное заполнение хранилища метрик в оперативной памяти из файла
 			if restoreOnStart {
 				err := InitialFulfilment(&s)
-				log.Println("Initial load metrics from file - SUCCESS")
 				if err != nil { //	при ошибке первичного заполнения хранилища URL, прерываем работу конструктора
 					return nil, err
 				}

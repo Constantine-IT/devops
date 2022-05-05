@@ -39,7 +39,7 @@ func (app *Application) PostJSONMetricaArrayHandler(w http.ResponseWriter, r *ht
 
 		//	проверяем тип метрики - допускается только gauge и counter
 		if metrica.MType != "gauge" && metrica.MType != "counter" {
-			app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica TYPES are allowed")
+			app.ErrorLog.Println("Try to insert metrica TYPE: ", metrica.MType, ", but only GAUGE or COUNTER are allowed")
 			continue
 		}
 

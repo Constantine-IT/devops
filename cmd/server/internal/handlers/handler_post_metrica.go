@@ -19,7 +19,7 @@ func (app *Application) PostMetricaHandler(w http.ResponseWriter, r *http.Reques
 
 	if Type != "gauge" && Type != "counter" {
 		http.Error(w, "only GAUGE or COUNTER metrica TYPES are allowed", http.StatusNotImplemented)
-		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica TYPES are allowed")
+		app.ErrorLog.Println("Try to insert metrica TYPE: ", Type, ", but only GAUGE or COUNTER are allowed")
 		return
 	}
 	_, errFloat := strconv.ParseFloat(Value, 64)

@@ -9,6 +9,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 type PollCounter struct {
@@ -44,32 +46,43 @@ func main() {
 		*ReportInterval, _ = time.ParseDuration(reportString) //	конвертируеим считанный string в интервал в секундах
 	}
 
-	var memStatistics runtime.MemStats //	экземпляр структуры для сохранения статистических данных
+	var memStatistics *runtime.MemStats      //	экземпляр структуры для сохранения статистических данных RUNTIME
+	var GopStatistics *mem.VirtualMemoryStat //	экземпляр структуры для сохранения статистических данных GOPSUTIL
 
 	pollCounter := &PollCounter{Count: 0} //	экземпляр структуры счётчика сбора метрик с mutex
 
-	pollTicker := time.NewTicker(*PollInterval) //	тикер для выдачи сигналов на пересбор статистики
-	time.Sleep(100 * time.Millisecond)
+	pollTicker := time.NewTicker(*PollInterval) //	тикер для выдачи сигналов на пересбор статистики RUNTIME
+	gopTicker := time.NewTicker(*PollInterval)  //	 //	тикер для выдачи сигналов на пересбор статистики GOPSUTIL
+	time.Sleep(500 * time.Millisecond)
 	reportTicker := time.NewTicker(*ReportInterval) //	тикер для выдачи сигнала на отправку статистики на сервер
 
 	log.Println("AGENT - metrics collector STARTED with configuration:\n   ADDRESS: ", *ServerAddress, "\n   POLL_INTERVAL: ", *PollInterval, "\n   REPORT_INTERVAL: ", *ReportInterval, "\n   KEY for Signature: ", *KeyToSign)
 
-	go func() { //	запускаем пересбор статистики раз в POLL_INTERVAL
+	go func() { //	запускаем пересбор статистики RUNTIME раз в POLL_INTERVAL в отдельной горутине
 		for {
 			<-pollTicker.C
 			//	считываем статиститку и увеличиваем счетчик считываний на 1
-			runtime.ReadMemStats(&memStatistics)
 			pollCounter.mutex.Lock() //	чуть позже заменим на атомарную операцию
 			pollCounter.Count++
 			pollCounter.mutex.Unlock()
+			runtime.ReadMemStats(memStatistics)
 		}
 	}()
-	go func() { //	запускаем отправку метрик на сервер раз в REPORT_INTERVAL
+
+	go func() { //	запускаем пересбор статистики GOPSUTIL раз в POLL_INTERVAL в отдельной горутине
+		for {
+			<-gopTicker.C
+			//	считываем статиститку и увеличиваем счетчик считываний на 1
+			GopStatistics, _ = mem.VirtualMemory()
+		}
+	}()
+
+	go func() { //	запускаем отправку метрик на сервер раз в REPORT_INTERVAL в отдельной горутине
 		for {
 			<-reportTicker.C
 			//	высылаем собранные метрики на сервер
 			pollCounter.mutex.Lock()
-			sendMetrics(memStatistics, pollCounter.Count, *ServerAddress, *KeyToSign)
+			sendMetrics(*memStatistics, *GopStatistics, pollCounter.Count, *ServerAddress, *KeyToSign)
 			//	после передачи метрик, сбрасываем счетчик циклов измерения метрик
 			pollCounter.Count = 0
 			pollCounter.mutex.Unlock()
@@ -92,24 +105,3 @@ func main() {
 		}
 	}
 }
-
-/* for increment14
-package main
-
-import (
-    "fmt"
-
-    "github.com/shirou/gopsutil/v3/mem"
-    // "github.com/shirou/gopsutil/mem"  // to use v2
-)
-
-func main() {
-    v, _ := mem.VirtualMemory()
-
-    // almost every return value is a struct
-    fmt.Printf("Total: %v, Free:%v, UsedPercent:%f%%\n", v.Total, v.Free, v.UsedPercent)
-
-    // convert to JSON. String() is also implemented
-    fmt.Println(v)
-}
-*/

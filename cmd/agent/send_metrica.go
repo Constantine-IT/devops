@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/shirou/gopsutil/v3/mem"
 	"log"
 	"math/rand"
 	"runtime"
@@ -20,7 +21,7 @@ type Metrics struct {
 	Hash  string  `json:"hash,omitempty"`  // значение хеш-функции
 }
 
-func sendMetrics(m runtime.MemStats, pollCount int64, serverAddress, KeyToSign string) {
+func sendMetrics(m runtime.MemStats, g mem.VirtualMemoryStat, pollCount int64, serverAddress, KeyToSign string) {
 
 	gaugeMetrics := make(map[string]float64)
 	MetricaArray := make([]Metrics, 0)
@@ -52,6 +53,9 @@ func sendMetrics(m runtime.MemStats, pollCount int64, serverAddress, KeyToSign s
 	gaugeMetrics["StackSys"] = float64(m.StackSys)
 	gaugeMetrics["Sys"] = float64(m.Sys)
 	gaugeMetrics["TotalAlloc"] = float64(m.TotalAlloc)
+	gaugeMetrics["TotalMemory"] = float64(g.Total)
+	gaugeMetrics["FreeMemory"] = float64(g.Free)
+	gaugeMetrics["CPUutilization1"] = g.UsedPercent
 	gaugeMetrics["RandomValue"] = rand.Float64()
 
 	// создаём клиента для отправки метрик на сервер

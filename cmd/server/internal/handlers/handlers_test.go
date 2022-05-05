@@ -71,7 +71,7 @@ func TestHandlersResponse(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusNotImplemented,
 				contentType: "text/plain; charset=utf-8",
-				body:        "only GAUGE or COUNTER metrica types are allowed\n",
+				body:        "only GAUGE or COUNTER metrica TYPES are allowed\n",
 			},
 		},
 		{
@@ -82,7 +82,7 @@ func TestHandlersResponse(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusBadRequest,
 				contentType: "text/plain; charset=utf-8",
-				body:        "only GAUGE or COUNTER metrica values are allowed\n",
+				body:        "only GAUGE or COUNTER metrica VALUES are allowed\n",
 			},
 		},
 		{
@@ -92,7 +92,7 @@ func TestHandlersResponse(t *testing.T) {
 			body:        "",
 			want: want{
 				statusCode:  http.StatusOK,
-				contentType: "text/plain; charset=utf-8",
+				contentType: "",
 				body:        "",
 			},
 		},
@@ -114,8 +114,96 @@ func TestHandlersResponse(t *testing.T) {
 			body:        "",
 			want: want{
 				statusCode:  http.StatusOK,
+				contentType: "text/html",
+				body:        `[{"id":"Alloc","type":"gauge","value":1000}]`,
+			},
+		},
+		{
+			name:        "Test #9: Request POST to get one metrica value by API",
+			request:     "/value",
+			requestType: http.MethodPost,
+			body:        `{"id":"Alloc", "type":"gauge"}`,
+			want: want{
+				statusCode:  http.StatusOK,
 				contentType: "application/json",
-				body:        `[{"name":"Alloc","value":"1000"}]`,
+				body:        `{"id":"Alloc", "type":"gauge", "value":1000}`,
+			},
+		},
+		{
+			name:        "Test #10: Request POST to update one metrica value by API",
+			request:     "/update",
+			requestType: http.MethodPost,
+			body:        `{"id":"Alloc", "type":"gauge"}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "",
+				body:        ``,
+			},
+		},
+		{
+			name:        "Test #11: Request POST to insert one metrica value by API like autotest_4",
+			request:     "/update/",
+			requestType: http.MethodPost,
+			body:        `{"id":"HeapReleased", "type":"gauge", "value":2695168.000000}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "",
+				body:        ``,
+			},
+		},
+		{
+			name:        "Test #12: Request POST to get one metrica value by API like autotest_4",
+			request:     "/value/",
+			requestType: http.MethodPost,
+			body:        `{"id":"HeapReleased", "type":"gauge"}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "application/json",
+				body:        `{"id":"HeapReleased", "type":"gauge", "value":2695168.000000}`,
+			},
+		},
+		{
+			name:        "Test #13: Request POST to put counter value by API",
+			request:     "/update/",
+			requestType: http.MethodPost,
+			body:        `{"id":"HeapCount", "type":"counter", "delta":111111}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "",
+				body:        ``,
+			},
+		},
+		{
+			name:        "Test #14: Request POST to get counter value by API",
+			request:     "/value/",
+			requestType: http.MethodPost,
+			body:        `{"id":"HeapCount", "type":"counter"}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "application/json",
+				body:        `{"id":"HeapCount", "type":"counter", "delta":111111}`,
+			},
+		},
+		{
+			name:        "Test #15: Request POST to put counter value by API in SECOND time",
+			request:     "/update/",
+			requestType: http.MethodPost,
+			body:        `{"id":"HeapCount", "type":"counter", "delta":111111}`,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "",
+				body:        ``,
+			},
+		},
+		{
+			name:        "Test #16: Request POST to get counter (that was SECOND updated) value by OLD SCHOOL",
+			request:     "/value/counter/HeapCount",
+			requestType: http.MethodGet,
+			body:        ``,
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "text/plain; charset=utf-8",
+				body:        `222222`,
 			},
 		},
 	}
@@ -123,8 +211,7 @@ func TestHandlersResponse(t *testing.T) {
 	app := &Application{
 		ErrorLog:   log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile),
 		InfoLog:    log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime),
-		BaseURL:    "http://127.0.0.1:8080",
-		Datasource: &storage.Storage{Data: make(map[string]storage.MetricaRow)},
+		Datasource: &storage.Storage{Data: make([]storage.Metrics, 0)},
 	}
 
 	for _, tt := range tests {

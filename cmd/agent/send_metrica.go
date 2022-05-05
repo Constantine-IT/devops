@@ -1,57 +1,123 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
+	"github.com/go-resty/resty/v2"
+	"github.com/shirou/gopsutil/v3/mem"
+	"log"
 	"math/rand"
-	"net/http"
 	"runtime"
-	"strconv"
 )
 
-//type gauge float64
-//type counter int64
+//	Metrics - структура для обмена информацией о метриках между сервером и агентами мониторинга
+type Metrics struct {
+	ID    string  `json:"id"`              // имя метрики
+	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Hash  string  `json:"hash,omitempty"`  // значение хеш-функции
+}
 
-func sendMetrica(m runtime.MemStats, pollCount uint64, serverAddress string) {
+func sendMetrics(m runtime.MemStats, g mem.VirtualMemoryStat, pollCount int64, serverAddress, KeyToSign string) {
 
-	type metricaRow struct {
-		mType string
-		value string
+	gaugeMetrics := make(map[string]float64)
+	MetricaArray := make([]Metrics, 0)
+	//	заполняем массив с метриками статистикой, собранной ранее в структуру runtime.MemStats
+	gaugeMetrics["Alloc"] = float64(m.Alloc)
+	gaugeMetrics["BuckHashSys"] = float64(m.BuckHashSys)
+	gaugeMetrics["Frees"] = float64(m.Frees)
+	gaugeMetrics["GCCPUFraction"] = m.GCCPUFraction
+	gaugeMetrics["GCSys"] = float64(m.GCSys)
+	gaugeMetrics["HeapAlloc"] = float64(m.HeapAlloc)
+	gaugeMetrics["HeapIdle"] = float64(m.HeapIdle)
+	gaugeMetrics["HeapInuse"] = float64(m.HeapInuse)
+	gaugeMetrics["HeapObjects"] = float64(m.HeapObjects)
+	gaugeMetrics["HeapReleased"] = float64(m.HeapReleased)
+	gaugeMetrics["HeapSys"] = float64(m.HeapSys)
+	gaugeMetrics["LastGC"] = float64(m.LastGC)
+	gaugeMetrics["Lookups"] = float64(m.Lookups)
+	gaugeMetrics["MCacheInuse"] = float64(m.MCacheInuse)
+	gaugeMetrics["MCacheSys"] = float64(m.MCacheSys)
+	gaugeMetrics["MSpanInuse"] = float64(m.MSpanInuse)
+	gaugeMetrics["MSpanSys"] = float64(m.MSpanSys)
+	gaugeMetrics["Mallocs"] = float64(m.Mallocs)
+	gaugeMetrics["NextGC"] = float64(m.NextGC)
+	gaugeMetrics["NumForcedGC"] = float64(m.NumForcedGC)
+	gaugeMetrics["NumGC"] = float64(m.NumGC)
+	gaugeMetrics["OtherSys"] = float64(m.OtherSys)
+	gaugeMetrics["PauseTotalNs"] = float64(m.PauseTotalNs)
+	gaugeMetrics["StackInuse"] = float64(m.StackInuse)
+	gaugeMetrics["StackSys"] = float64(m.StackSys)
+	gaugeMetrics["Sys"] = float64(m.Sys)
+	gaugeMetrics["TotalAlloc"] = float64(m.TotalAlloc)
+	gaugeMetrics["TotalMemory"] = float64(g.Total)
+	gaugeMetrics["FreeMemory"] = float64(g.Free)
+	gaugeMetrics["CPUutilization1"] = g.UsedPercent
+	gaugeMetrics["RandomValue"] = rand.Float64()
+
+	// создаём клиента для отправки метрик на сервер
+	client := resty.New()
+
+	for name, row := range gaugeMetrics { //	пробегаем по всем метрикам типа gauge
+		metrica := Metrics{ //	изготавливаем структуру для отправки данных
+			ID:    name,
+			MType: "gauge",
+			Delta: 0,
+			Value: row,
+		}
+		if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись HMAC c SHA256
+			h := hmac.New(sha256.New, []byte(KeyToSign)) //	создаём интерфейс подписи с хешированием
+			//	формируем фразу для хеширования метрики по шаблону типа gauge
+			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, metrica.Value)))
+			hash256 := h.Sum(nil)                     //	вычисляем HASH для метрики
+			metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
+		}
+
+		//	добавляем сформированную метрику в массив для отправки на сервер
+		MetricaArray = append(MetricaArray, metrica)
+		// sendPostMetrica(metrica, client, serverAddress) //	отправляем метрику на сервер
 	}
 
-	metrica := make(map[string]metricaRow)
+	//	пробегаем по всем метрикам типа counter
 
-	metrica["Alloc"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.Alloc, 10)}
-	metrica["BuckHashSys"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.BuckHashSys, 10)}
-	metrica["Frees"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.Frees, 10)}
-	metrica["GCCPUFraction"] = metricaRow{mType: "gauge", value: strconv.FormatFloat(m.GCCPUFraction, 'E', -1, 64)}
-	metrica["GCSys"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.GCSys, 10)}
-	metrica["HeapAlloc"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.HeapAlloc, 10)}
-	metrica["HeapIdle"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.HeapIdle, 10)}
-	metrica["HeapInuse"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.HeapInuse, 10)}
-	metrica["HeapObjects"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.HeapObjects, 10)}
-	metrica["HeapReleased"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.HeapReleased, 10)}
-	metrica["HeapSys"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.HeapSys, 10)}
-	metrica["LastGC"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.LastGC, 10)}
-	metrica["Lookups"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.Lookups, 10)}
-	metrica["MCacheInuse"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.MCacheInuse, 10)}
-	metrica["MCacheSys"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.MCacheSys, 10)}
-	metrica["MSpanInuse"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.MSpanInuse, 10)}
-	metrica["MSpanSys"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.MSpanSys, 10)}
-	metrica["Mallocs"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.Mallocs, 10)}
-	metrica["NextGC"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.NextGC, 10)}
-	metrica["NumForcedGC"] = metricaRow{mType: "gauge", value: strconv.FormatUint(uint64(m.NumForcedGC), 10)}
-	metrica["NumGC"] = metricaRow{mType: "gauge", value: strconv.FormatUint(uint64(m.NumGC), 10)}
-	metrica["OtherSys"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.OtherSys, 10)}
-	metrica["PauseTotalNs"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.PauseTotalNs, 10)}
-	metrica["StackInuse"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.StackInuse, 10)}
-	metrica["StackSys"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.StackSys, 10)}
-	metrica["Sys"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.Sys, 10)}
-	metrica["TotalAlloc"] = metricaRow{mType: "gauge", value: strconv.FormatUint(m.TotalAlloc, 10)}
-	metrica["RandomValue"] = metricaRow{mType: "gauge", value: strconv.FormatUint(rand.Uint64(), 10)}
-	metrica["PollCount"] = metricaRow{mType: "counter", value: strconv.FormatUint(pollCount, 10)}
-
-	for name, row := range metrica {
-		resp, _ := http.Post("http://"+serverAddress+"/update/"+row.mType+"/"+name+"/"+row.value, "text/plain", nil)
-		resp.Body.Close()
+	metrica := Metrics{ //	изготавливаем структуру для отправки данных
+		ID:    "PollCount",
+		MType: "counter",
+		Delta: pollCount,
+		Value: 0,
 	}
 
+	if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись HMAC c SHA256
+		h := hmac.New(sha256.New, []byte(KeyToSign)) //	создаём интерфейс подписи с хешированием
+		//	формируем фразу для хеширования метрики по шаблону типа counter
+		h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, metrica.Delta)))
+		hash256 := h.Sum(nil)                     //	вычисляем HASH для метрики
+		metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
+	}
+
+	//	добавляем сформированную метрику в массив для отправки на сервер
+	MetricaArray = append(MetricaArray, metrica)
+
+	sendPostMetrica(MetricaArray, client, serverAddress) //	отправляем метрику на сервер
+
+}
+
+func sendPostMetrica(MetricaArray []Metrics, client *resty.Client, serverAddress string) {
+	//	изготавливаем JSON
+	metricsJSON, err := json.Marshal(MetricaArray)
+	if err != nil || metricsJSON == nil {
+		log.Println("couldn't marshal metrica JSON")
+	}
+
+	// отправляем метрику на сервер через JSON API
+	_, err = client.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(metricsJSON).
+		Post("http://" + serverAddress + "/updates/")
+	if err != nil {
+		log.Println(err.Error())
+	}
 }

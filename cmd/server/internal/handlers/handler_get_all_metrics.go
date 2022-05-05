@@ -5,28 +5,35 @@ import (
 	"net/http"
 )
 
+//	MetricaValue - структура для выдачи списка всех сохранённых метрик по запросу
+//	используется методах Storage.GetAll и GetAllMetricsHandler
+type MetricaValue struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 //	GetAllMetricsHandler - обработчик GET / - возвращает список всех сохраненных в базе метрик
 func (app *Application) GetAllMetricsHandler(w http.ResponseWriter, r *http.Request) {
 	//	ищем в базее все сохранённые связки MetricaValue + MetricaName
-	metricaValues, isFound := app.Datasource.GetAll()
+	metrics := app.Datasource.GetAll()
 
-	switch isFound {
-	//	анализируем значение флага для выдачи всех сохраненных метрик
-	case false: //	если метрики в базе не найдены
+	if len(metrics) == 0 {
+		//	если метрики в базе не найдены
 		http.Error(w, "There is no METRICA in our database", http.StatusNotFound)
 		app.ErrorLog.Println("There is no METRICA in our database")
 		return
-	case true: //	если метрика в базе найдена, то преобразуем её в JSON и вставляем в тело ответа
-		//	структуру JSON дополнительно описывать не надо, так как возвращаемый функцией GetAll список уже имеет JSON теги
-		metricaValuesJSON, err := json.Marshal(metricaValues) //	изготавливаем JSON
-		//log.Println(string(metricaValuesJSON))
-		if err != nil || metricaValuesJSON == nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			app.ErrorLog.Println(err.Error())
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(metricaValuesJSON) //	пишем MetricaValue в JSON виде в тело ответа
 	}
+
+	//	если метрики в базе найдены, то преобразуем массив с ними в JSON и вставляем в тело ответа
+	//	структуру JSON дополнительно описывать не надо, так как возвращаемый функцией GetAll список уже имеет JSON теги
+	metricsJSON, err := json.Marshal(metrics) //	изготавливаем JSON
+	if err != nil || metricsJSON == nil {     //	в случае ошибки преобразования, выдаем http.StatusInternalServerError
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		app.ErrorLog.Println(err.Error())
+		return
+	}
+	//	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	w.Write(metricsJSON) //	пишем MetricaValue в JSON виде в тело ответа
 }

@@ -23,9 +23,13 @@ type Metrics struct {
 
 func sendMetrics(m runtime.MemStats, g mem.VirtualMemoryStat, pollCount int64, serverAddress, KeyToSign string) {
 
+	// создаём срез для хранения метрик
 	gaugeMetrics := make(map[string]float64)
 	MetricaArray := make([]Metrics, 0)
-	//	заполняем массив с метриками статистикой, собранной ранее в структуру runtime.MemStats
+
+	//	заполняем срез метриками типа gauge из статистики,
+	//	собранной ранее в структуры runtime.MemStats и mem.VirtualMemoryStat
+
 	gaugeMetrics["Alloc"] = float64(m.Alloc)
 	gaugeMetrics["BuckHashSys"] = float64(m.BuckHashSys)
 	gaugeMetrics["Frees"] = float64(m.Frees)
@@ -58,54 +62,62 @@ func sendMetrics(m runtime.MemStats, g mem.VirtualMemoryStat, pollCount int64, s
 	gaugeMetrics["CPUutilization1"] = g.UsedPercent
 	gaugeMetrics["RandomValue"] = rand.Float64()
 
-	// создаём клиента для отправки метрик на сервер
-	client := resty.New()
+	metrica := Metrics{ //	изготавливаем структуру для отправки метрик типа gauge, для них delta = 0
+		MType: "gauge",
+		Delta: 0,
+	}
 
 	for name, row := range gaugeMetrics { //	пробегаем по всем метрикам типа gauge
-		metrica := Metrics{ //	изготавливаем структуру для отправки данных
-			ID:    name,
-			MType: "gauge",
-			Delta: 0,
-			Value: row,
-		}
-		if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись HMAC c SHA256
+		//	заполняем структуру metrica данными конкретной метрики
+		metrica.ID = name
+		metrica.Value = row
+		if KeyToSign != "" { //	если ключ для подписи задан
 			h := hmac.New(sha256.New, []byte(KeyToSign)) //	создаём интерфейс подписи с хешированием
 			//	формируем фразу для хеширования метрики по шаблону типа gauge
 			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, metrica.Value)))
-			hash256 := h.Sum(nil)                     //	вычисляем HASH для метрики
-			metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
+			hash256 := h.Sum(nil) //	вычисляем HASH сумму в виде []byte
+			//	переводим её в тип данных string и вставляем в метрику подпись HMAC c SHA256
+			metrica.Hash = fmt.Sprintf("%x", hash256)
 		}
 
 		//	добавляем сформированную метрику в массив для отправки на сервер
 		MetricaArray = append(MetricaArray, metrica)
-		// sendPostMetrica(metrica, client, serverAddress) //	отправляем метрику на сервер
 	}
 
-	//	пробегаем по всем метрикам типа counter
+	//	теперь пройдёмся по всем метрикам типа counter
 
-	metrica := Metrics{ //	изготавливаем структуру для отправки данных
-		ID:    "PollCount",
-		MType: "counter",
-		Delta: pollCount,
-		Value: 0,
-	}
+	//	меняем структуру metrica под метрики типа counter, для них value = 0
+	metrica.MType = "counter"
+	metrica.Value = 0
 
-	if KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись HMAC c SHA256
+	// такая метрика у нас одна, так что задаем её значения напрямую
+	metrica.ID = "PollCount"
+	metrica.Delta = pollCount
+
+	if KeyToSign != "" { //	если ключ для изготовления подписи задан
 		h := hmac.New(sha256.New, []byte(KeyToSign)) //	создаём интерфейс подписи с хешированием
 		//	формируем фразу для хеширования метрики по шаблону типа counter
 		h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, metrica.Delta)))
-		hash256 := h.Sum(nil)                     //	вычисляем HASH для метрики
-		metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
+		hash256 := h.Sum(nil) //	вычисляем HASH сумму в виде []byte
+		//	переводим её в тип данных string и вставляем в метрику подпись HMAC c SHA256
+		metrica.Hash = fmt.Sprintf("%x", hash256)
 	}
 
 	//	добавляем сформированную метрику в массив для отправки на сервер
 	MetricaArray = append(MetricaArray, metrica)
 
-	sendPostMetrica(MetricaArray, client, serverAddress) //	отправляем метрику на сервер
+	//	если массив с метриками содержит данные, то отправляем его на сервер с указанным адресом
+	if len(MetricaArray) > 0 {
+		sendPostMetrica(MetricaArray, serverAddress)
+	}
 
 }
 
-func sendPostMetrica(MetricaArray []Metrics, client *resty.Client, serverAddress string) {
+//	sendPostMetrica - функция отправки массива метрик на указанный серверный адрес
+func sendPostMetrica(MetricaArray []Metrics, serverAddress string) {
+	// создаём HTTP-клиента для отправки метрик на сервер
+	client := resty.New()
+
 	//	изготавливаем JSON
 	metricsJSON, err := json.Marshal(MetricaArray)
 	if err != nil || metricsJSON == nil {

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -17,13 +18,6 @@ func (app *Application) GetAllMetricsHandler(w http.ResponseWriter, r *http.Requ
 	//	ищем в базее все сохранённые связки MetricaValue + MetricaName
 	metrics := app.Datasource.GetAll()
 
-	if len(metrics) == 0 {
-		//	если метрики в базе не найдены
-		http.Error(w, "There is no METRICA in our database", http.StatusNotFound)
-		app.ErrorLog.Println("There is no METRICA in our database")
-		return
-	}
-
 	//	если метрики в базе найдены, то преобразуем массив с ними в JSON и вставляем в тело ответа
 	//	структуру JSON дополнительно описывать не надо, так как возвращаемый функцией GetAll список уже имеет JSON теги
 	metricsJSON, err := json.Marshal(metrics) //	изготавливаем JSON
@@ -32,8 +26,16 @@ func (app *Application) GetAllMetricsHandler(w http.ResponseWriter, r *http.Requ
 		app.ErrorLog.Println(err.Error())
 		return
 	}
-	//	w.Header().Set("Content-Type", "application/json")
+
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	w.Write(metricsJSON) //	пишем MetricaValue в JSON виде в тело ответа
+	var bodyRow []byte
+	for _, row := range metrics {
+		if row.Delta == 0 {
+			bodyRow = []byte(fmt.Sprintf("Metrica: %s = %v\n", row.ID, row.Value))
+		} else {
+			bodyRow = []byte(fmt.Sprintf("Metrica: %s = %v\n", row.ID, row.Delta))
+		}
+		w.Write(bodyRow) //	пишем метрики в тело ответа
+	}
 }

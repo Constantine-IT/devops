@@ -81,7 +81,7 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 	}
 	if errType != nil {
 		http.Error(w, errType.Error(), http.StatusInternalServerError)
-		app.ErrorLog.Println("URL save error:" + errType.Error())
+		app.ErrorLog.Println("Metrics save ", errType.Error())
 		return
 	}
 

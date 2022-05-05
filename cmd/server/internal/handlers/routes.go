@@ -50,13 +50,13 @@ func (app *Application) Routes() chi.Router {
 		Эндпоинт GET - возвращает значение метикрики по данным из PATH = "/value/{MetricaType}/{MetricaName}"
 		Эндпоинт GET / - возвращает список всех сохраненных в базе метрик	*/
 	r.Route("/", func(r chi.Router) {
-		r.Post("/update/{MetricaType}/{MetricaName}/{MetricaValue}", app.PostMetricaHandler)
+		r.Post("/update/{Type}/{Name}/{Value}", app.PostMetricaHandler)
 		r.Post("/update/", app.PostJSONMetricaHandler)
 		r.Post("/updates/", app.PostJSONMetricaArrayHandler)
 		r.Post("/update", app.PostJSONMetricaHandler)
 		r.Post("/value/", app.GetJSONMetricaHandler)
 		r.Post("/value", app.GetJSONMetricaHandler)
-		r.Get("/value/{MetricaType}/{MetricaName}", app.GetMetricaHandler)
+		r.Get("/value/{Type}/{Name}", app.GetMetricaHandler)
 		r.Get("/ping", app.PingDataBaseHandler)
 		r.Get("/", app.GetAllMetricsHandler)
 	})

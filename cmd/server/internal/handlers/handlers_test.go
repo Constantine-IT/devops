@@ -115,7 +115,7 @@ func TestHandlersResponse(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusOK,
 				contentType: "text/html",
-				body:        `[{"id":"Alloc","type":"gauge","value":1000}]`,
+				body:        "Metrica: Alloc = 1000",
 			},
 		},
 		{

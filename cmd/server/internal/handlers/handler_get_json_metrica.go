@@ -23,13 +23,12 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	//	структура storage.Metrics используется для приема и выдачи значений метрик
-	//	теги для JSON там уже описаны, так что дополнительного описания для парсинга не требуется
-
 	//	создаеём экземпляр структуры для заполнения из JSON
 	metrica := Metrics{}
 
-	//	парсим JSON и записываем результат в экземпляр структуры
+	//	структура Metrics используется для приема и выдачи значений метрик
+	//	теги для JSON там уже описаны, так что дополнительного описания для парсинга не требуется
+	//	парсим JSON и записываем результат в экземпляр структуры Metrics
 	err = json.Unmarshal(jsonBody, &metrica)
 	//	проверяем успешно ли парсится JSON
 	if err != nil {
@@ -41,22 +40,20 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	// поддерживаются только типы метрик gauge и counter
 	if metrica.MType != "gauge" && metrica.MType != "counter" {
 		http.Error(w, "only GAUGE or COUNTER metrica TYPES are allowed", http.StatusNotImplemented)
-		app.ErrorLog.Println("Metrica save error: only GAUGE or COUNTER metrica TYPES are allowed")
+		app.ErrorLog.Println("Try to insert metrica TYPE: ", metrica.MType, ", but only GAUGE or COUNTER are allowed")
 		return
 	}
 
-	MetricaTypeFromDB, MetricaDeltaFromDB, MetricaValueFromDB, flagIsExist := app.Datasource.Get(metrica.ID)
+	//	ищем в базее метрику с входящим именем, и выводим для неё тип и значение
+	TypeFromDB, DeltaFromDB, ValueFromDB, flagIsExist := app.Datasource.Get(metrica.ID)
 
-	switch flagIsExist {
-	//	анализируем значение флага для выборки метрики
+	switch flagIsExist { //	анализируем значение флага наличия метрики в базе
 	case 0: //	если метрика в базе не найдена
 		http.Error(w, "There is no such METRICA in our database", http.StatusNotFound)
-		app.ErrorLog.Println("There is no such METRICA in our database")
 		return
 	case 1: //	если метрика в базе найдена, то проверяем, того ли она типа, что указывалось при её сохранении
-		if metrica.MType != MetricaTypeFromDB { //	если тип метрики НЕ совпадает с хранимым в базе
+		if metrica.MType != TypeFromDB { //	если тип метрики НЕ совпадает с хранимым в базе
 			http.Error(w, "metrica TYPE you specified is NOT the same as in database", http.StatusBadRequest)
-			app.ErrorLog.Println("metrica TYPE you specified is NOT the same as in database")
 			return
 		}
 	default:
@@ -65,10 +62,10 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	//	если метрика в базе найдена (flagIsExist = 1), то преобразуем её структуру в JSON и вставляем в тело ответа
-	//	структуру JSON дополнительно описывать не надо, так как возвращаемая функцией Get структура Metrics уже имеет JSON теги
-	metrica.Delta = MetricaDeltaFromDB
-	metrica.Value = MetricaValueFromDB
-	if app.KeyToSign != "" { //	если ключ для изготовления подписи задан, вставляем в метрику подпись HMAC c SHA256
+	//	структуру JSON дополнительно описывать не надо, так как структура Metrics уже имеет JSON теги
+	metrica.Delta = DeltaFromDB
+	metrica.Value = ValueFromDB
+	if app.KeyToSign != "" { //	если ключ для подписи задан, вставляем в метрику подпись HMAC c SHA256
 		h := hmac.New(sha256.New, []byte(app.KeyToSign)) //	создаём интерфейс подписи с хешированием
 		//	формируем фразу для хеширования по разному шаблону для метрик типа counter и gauge
 		if metrica.MType == "counter" {
@@ -77,19 +74,19 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 		if metrica.MType == "gauge" {
 			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, metrica.Value)))
 		}
-		hash256 := h.Sum(nil)                     //	вычисляем HASH для метрики
-		metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в структуру метрики
+		hash256 := h.Sum(nil)                     //	вычисляем HASH-подпись
+		metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в метрику в поле HASH
 	}
 
-	metricsJSON, err := json.Marshal(metrica) //	изготавливаем JSON
+	metricsJSON, err := json.Marshal(metrica) //	изготавливаем JSON со структурой нашей метрики
 	if err != nil || metricsJSON == nil {     //	в случае ошибки преобразования, выдаем http.StatusInternalServerError
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		app.ErrorLog.Println(err.Error())
+		app.ErrorLog.Println("Marshal JSON ", err.Error())
 		return
 	}
 
 	//	формируем ответ с http.StatusOK и метрикой в теле ответа в виде JSON
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(metricsJSON) //	пишем MetricaValue в JSON виде в тело ответа
+	w.Write(metricsJSON) //	пишем метрику в JSON виде в тело ответа
 }

@@ -46,8 +46,8 @@ func main() {
 		*ReportInterval, _ = time.ParseDuration(reportString) //	конвертируеим считанный string в интервал в секундах
 	}
 
-	var memStatistics *runtime.MemStats      //	экземпляр структуры для сохранения статистических данных RUNTIME
-	var GopStatistics *mem.VirtualMemoryStat //	экземпляр структуры для сохранения статистических данных GOPSUTIL
+	var memStatistics runtime.MemStats      //	экземпляр структуры для сохранения статистических данных RUNTIME
+	var GopStatistics mem.VirtualMemoryStat //	экземпляр структуры для сохранения статистических данных GOPSUTIL
 
 	pollCounter := &PollCounter{Count: 0} //	экземпляр структуры счётчика сбора метрик с mutex
 
@@ -65,7 +65,7 @@ func main() {
 			pollCounter.mutex.Lock() //	чуть позже заменим на атомарную операцию
 			pollCounter.Count++
 			pollCounter.mutex.Unlock()
-			runtime.ReadMemStats(memStatistics)
+			runtime.ReadMemStats(&memStatistics)
 		}
 	}()
 
@@ -73,7 +73,9 @@ func main() {
 		for {
 			<-gopTicker.C
 			//	считываем статиститку и увеличиваем счетчик считываний на 1
-			GopStatistics, _ = mem.VirtualMemory()
+			g, _ := mem.VirtualMemory()
+			GopStatistics = *g
+
 		}
 	}()
 
@@ -82,7 +84,7 @@ func main() {
 			<-reportTicker.C
 			//	высылаем собранные метрики на сервер
 			pollCounter.mutex.Lock()
-			sendMetrics(*memStatistics, *GopStatistics, pollCounter.Count, *ServerAddress, *KeyToSign)
+			sendMetrics(memStatistics, GopStatistics, pollCounter.Count, *ServerAddress, *KeyToSign)
 			//	после передачи метрик, сбрасываем счетчик циклов измерения метрик
 			pollCounter.Count = 0
 			pollCounter.mutex.Unlock()

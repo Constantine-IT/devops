@@ -28,6 +28,9 @@ func main() {
 	DatabaseDSN := flag.String("d", "", "DATABASE_DSN — адрес подключения к БД (PostgreSQL)")
 	flag.Parse()
 
+	//	DATABASE_DSN имеет приоритет над FILE_STORE, то есть использование базы данных отменяет запись метрик в файл,
+	//	но возможно считывание метрик из файла при старте сервера, при наличии RESTORE=true
+
 	//	считываем переменные окружения
 	//	если они заданы - переопределяем соответствующие локальные переменные:
 	if u, flg := os.LookupEnv("ADDRESS"); flg { //	ADDRESS — адрес запуска HTTP-сервера
@@ -39,13 +42,13 @@ func main() {
 	if u, flg := os.LookupEnv("STORE_FILE"); flg { //	STORE_FILE — путь до файла с сокращёнными метриками
 		*StoreFile = u
 	}
-	if u, flg := os.LookupEnv("STORE_INTERVAL"); flg { //	STORE_INTERVAL — интервал сброса показания сервера на диск
-		*StoreInterval, _ = time.ParseDuration(u) //	конвертируеим считанный string в интервал в секундах
+	if u, flg := os.LookupEnv("STORE_INTERVAL"); flg { //	STORE_INTERVAL — интервал сохранения метрик на диск
+		*StoreInterval, _ = time.ParseDuration(u) //	конвертируем считанный string во временной интервал
 	}
 	if u, flg := os.LookupEnv("RESTORE"); flg { //	RESTORE — определяет, загружать ли метрики файла при старте сервера
 		if u == "false" { //	если флаг равен FALSE, то присвоим переменной значение FALSE
 			*RestoreOnStart = false
-		} else { //	для всех иных явно заданных значений флага, присваиваем переменной значение TRUE
+		} else { //	для всех иных ЯВНО заданных значений флага, присваиваем переменной значение TRUE (значение по умолчанию)
 			*RestoreOnStart = true
 		}
 	}
@@ -53,11 +56,6 @@ func main() {
 		*KeyToSign = u
 	}
 
-	/*
-		if *StoreFile != "/tmp/devops-metrics-db.json" { //	для автотестов использующих файл, а не БД
-			*DatabaseDSN = "" //	чтобы не возникало конфликтов с БД
-		}
-	*/
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)                  // logger для информационных сообщений
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile) // logger для сообщений об ошибках
 
@@ -101,7 +99,7 @@ func main() {
 		if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
 			// в случае корректного останова сервера - закрываем все структуры хранения
 			app.Datasource.Close()
-			log.Println("SERVER metrics collector (code 0) SHUTDOWN")
+			log.Println("SERVER metrics collector normal SHUTDOWN (code 0)")
 			os.Exit(0)
 		}
 	}

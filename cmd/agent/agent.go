@@ -1,14 +1,9 @@
 package main
 
 import (
-	"flag"
 	"github.com/Constantine-IT/devops/cmd/agent/internal"
-	"log"
-	"os"
-	"os/signal"
 	"runtime"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/mem"
@@ -20,51 +15,28 @@ type PollCounter struct {
 }
 
 func main() {
-	//	Приоритеты настроек:
-	//	1.	Переменные окружения - ENV
-	//	2.	Значения, задаваемые флагами при запуске из консоли
-	//	3.	Значения по умолчанию.
-	//	Считываем флаги запуска из командной строки и задаём значения по умолчанию, если флаг при запуске не указан
-	ServerAddress := flag.String("a", "127.0.0.1:8080", "ADDRESS - адрес сервера-агрегатора метрик")
-	KeyToSign := flag.String("k", "", "KEY - ключ подписи передаваемых метрик")
-	PollInterval := flag.Duration("p", 2*time.Second, "POLL_INTERVAL - интервал обновления метрик (сек.)")
-	ReportInterval := flag.Duration("r", 10*time.Second, "REPORT_INTERVAL - интервал отправки метрик на сервер (сне.)")
-	//	парсим флаги
-	flag.Parse()
-
-	//	считываем переменные окружения
-	//	если они заданы - переопределяем соответствующие локальные переменные:
-	if addrString, flg := os.LookupEnv("ADDRESS"); flg {
-		*ServerAddress = addrString
-	}
-	if keyString, flg := os.LookupEnv("KEY"); flg {
-		*KeyToSign = keyString
-	}
-	if pollString, flg := os.LookupEnv("POLL_INTERVAL"); flg {
-		*PollInterval, _ = time.ParseDuration(pollString) //	конвертируеим считанный string в интервал в секундах
-	}
-	if reportString, flg := os.LookupEnv("REPORT_INTERVAL"); flg {
-		*ReportInterval, _ = time.ParseDuration(reportString) //	конвертируеим считанный string в интервал в секундах
-	}
+	//	конфигурация приложения через считывание флагов и переменных окружения
+	cfg := newConfig()
 
 	var memStatistics runtime.MemStats      //	экземпляр структуры для сохранения статистических данных RUNTIME
 	var GopStatistics mem.VirtualMemoryStat //	экземпляр структуры для сохранения статистических данных GOPSUTIL
+	pollCounter := &PollCounter{Count: 0}   //	экземпляр структуры счётчика сбора метрик с mutex
 
-	pollCounter := &PollCounter{Count: 0} //	экземпляр структуры счётчика сбора метрик с mutex
-
-	pollTicker := time.NewTicker(*PollInterval) //	тикер для выдачи сигналов на пересбор статистики RUNTIME
+	pollTicker := time.NewTicker(cfg.PollInterval)     //	тикер для выдачи сигналов на пересбор статистики RUNTIME
+	gopTicker := time.NewTicker(cfg.PollInterval)      //	тикер для выдачи сигналов на пересбор статистики GOPSUTIL
+	time.Sleep(cfg.PollInterval / 2)                   //	вводим задержку, чтобы сбор статистики не наложился на отправку на сервер
+	reportTicker := time.NewTicker(cfg.ReportInterval) //	тикер для выдачи сигнала на отправку статистики на сервер
 	defer pollTicker.Stop()
-	gopTicker := time.NewTicker(*PollInterval) //	тикер для выдачи сигналов на пересбор статистики GOPSUTIL
 	defer gopTicker.Stop()
-	//	вводим задержку, чтобы сбор статистики не выпадал на отправку статистики на сервер
-	time.Sleep(*PollInterval / 2)
-	reportTicker := time.NewTicker(*ReportInterval) //	тикер для выдачи сигнала на отправку статистики на сервер
 	defer reportTicker.Stop()
 
-	//	выводим в лог конфигурацию агента
-	log.Println("AGENT - metrics collector STARTED with configuration:\n   ADDRESS: ", *ServerAddress, "\n   POLL_INTERVAL: ", *PollInterval, "\n   REPORT_INTERVAL: ", *ReportInterval, "\n   KEY for Signature: ", *KeyToSign)
+	//	учёт запущенных горутин
+	wg := &sync.WaitGroup{}
+	//	добавялем 3 горутины: 2 на сбор статистики и 1 на отправку метрик на сервер
+	wg.Add(3)
 
 	go func() { //	запускаем пересбор статистики RUNTIME раз в POLL_INTERVAL в отдельной горутине
+		defer wg.Done()
 		for {
 			<-pollTicker.C
 			//	считываем статиститку и увеличиваем счетчик считываний на 1
@@ -76,6 +48,7 @@ func main() {
 	}()
 
 	go func() { //	запускаем пересбор статистики GOPSUTIL раз в POLL_INTERVAL в отдельной горутине
+		defer wg.Done()
 		for {
 			<-gopTicker.C
 			//	считываем статиститку и увеличиваем счетчик считываний на 1
@@ -86,30 +59,18 @@ func main() {
 	}()
 
 	go func() { //	запускаем отправку метрик на сервер раз в REPORT_INTERVAL в отдельной горутине
+		defer wg.Done()
 		for {
 			<-reportTicker.C
 			//	высылаем собранные метрики на сервер
 			pollCounter.mutex.Lock()
-			internal.SendMetrics(memStatistics, GopStatistics, pollCounter.Count, *ServerAddress, *KeyToSign)
+			internal.SendMetrics(memStatistics, GopStatistics, pollCounter.Count, cfg.ServerAddress, cfg.KeyToSign)
 			//	после передачи метрик, сбрасываем счетчик циклов измерения метрик
 			pollCounter.Count = 0
 			pollCounter.mutex.Unlock()
 		}
 	}()
 
-	// создаём сигнальный канал для отслеживания системных вызовов на остановку агента
-	signalChanel := make(chan os.Signal, 1)
-	signal.Notify(signalChanel,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-
-	//	запускаем процесс слежение за сигналами на останов агента
-	for {
-		s := <-signalChanel //	при получении сигнала на закрытие приложения - делаем os.Exit со статусом 0
-		if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
-			log.Println("AGENT metrics collector (code 0) SHUTDOWN")
-			os.Exit(0)
-		}
-	}
+	//	ждём до закрытия всех горутин
+	wg.Wait()
 }

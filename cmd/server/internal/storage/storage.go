@@ -18,8 +18,18 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 	//	Блокируем структуру храниения в оперативной памяти на время записи информации
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-
-	//	сохраняем метрики в оперативной памяти в структуре storage.Storage
+	if s.SyncWriter != nil { //	если задана синхронная запись в файл-хранилище
+		m := Metrics{ //	изготавливаем экземпляр структуры метрики
+			ID:    name,
+			MType: mType,
+			Delta: delta,
+			Value: value,
+		}
+		if err := fileWriter.Write(&m); err != nil { //	записываем метрику в файл
+			return err
+		}
+	}
+	//	сохраняем метрики в оперативной памяти в структуре Storage
 	//	каждая запись - это структура метрики с (NAME + Type + VALUE/DELTA) - Metrics
 	//	для метрик типа gauge задано только поле value
 	//	для метрик типа count задано только поле delta

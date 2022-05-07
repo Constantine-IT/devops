@@ -15,6 +15,7 @@ type Application struct {
 	InfoLog    *log.Logger        //	журнал информационных сообщений
 	KeyToSign  string             //	ключ для подписи метрик по алгоритму SHA256
 	Datasource storage.Datasource //	источник данных для хранения URL
+	SyncWriter *storage.Writer    //	дескриптор записи в файл-хранилище
 }
 
 //	Metrics - структура для обмена информацией о метриках между сервером и агентами мониторинга

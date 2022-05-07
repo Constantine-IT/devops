@@ -70,26 +70,26 @@ func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, r
 			if err != nil {                        //	при ошибке создания writer, прерываем работу конструктора
 				return nil, err
 			}
+			if storeInterval == 0 { //	при интервале сохранения = 0, включается синхронный режим записи в файл
+				s.SyncWriter = fileWriter
+				return strg, nil
+			} else { // для всех интервалов больше 0,
+				go func() { // запускаем отдельный воркер - записи метрик в файл на периодической основе
+					// создаём тикер, подающий раз в StoreInterval секунд сигнал на запись метрик в файл
+					fileWriteTicker := time.NewTicker(storeInterval)
+					defer fileWriteTicker.Stop()
 
-			//	запускаем отдельный воркер - записи метрик в файл на периодической основе
-			go func() {
-				if storeInterval <= 0 { //	минимальный интервал сброса дампа метрик в файл - 1 секунда
-					storeInterval = 1
-				}
-				// создаём тикер, подающий раз в StoreInterval секунд, сигнал на запись метрик в файл
-				fileWriteTicker := time.NewTicker(storeInterval)
-				defer fileWriteTicker.Stop()
-
-				for { // запускаем слежение за каналами тикера записи в файл
-					<-fileWriteTicker.C
-					//	пишем метрики в файл
-					if err := DumpToFile(&s); err != nil {
-						log.Println("SERVER metrics collector unable to write to file - (code 1) SHUTDOWN")
-						os.Exit(1)
+					for { // запускаем слежение за каналами тикера записи в файл
+						<-fileWriteTicker.C
+						//	пишем метрики в файл
+						if err := DumpToFile(&s); err != nil {
+							log.Println("SERVER metrics collector unable to write to file - (code 1) SHUTDOWN")
+							os.Exit(1)
+						}
 					}
-				}
 
-			}()
+				}()
+			}
 		}
 	}
 	return strg, nil //	если всё прошло ОК, то возращаем выбранный источник данных

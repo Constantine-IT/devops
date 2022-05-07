@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"sync"
 )
@@ -82,6 +83,7 @@ func (c *reader) Close() error {
 
 //	DumpToFile - сбрасывает все метрики в файловое хранилище, затирая его содержимое новой информацией
 func DumpToFile(s *Storage) error {
+	log.Println("DumpToFile")
 	//	перебираем все строки хранилища метрик в оперативной памяти по одной и вставляем в файл-хранилище
 	for _, m := range s.Data {
 		if err := fileWriter.Write(&m); err != nil {

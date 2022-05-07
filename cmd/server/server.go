@@ -12,7 +12,7 @@ func main() {
 	cfg := newConfig()
 
 	//	конструктор источника данных сервера, на основе входящих параметров
-	datasource, syncWriter, err := storage.NewDatasource(cfg.DatabaseDSN, cfg.StoreFile, cfg.StoreInterval, cfg.RestoreOnStart)
+	datasource, err := storage.NewDatasource(cfg.DatabaseDSN, cfg.StoreFile, cfg.StoreInterval, cfg.RestoreOnStart)
 	if err != nil {
 		cfg.ErrorLog.Fatal(err)
 	}
@@ -23,7 +23,6 @@ func main() {
 		InfoLog:    cfg.InfoLog,   //	журнал информационных сообщений
 		KeyToSign:  cfg.KeyToSign, //	ключ для подписи метрик по алгоритму HMAC c SHA256
 		Datasource: datasource,    //	источник данных для хранения метрик
-		SyncWriter: syncWriter,    //	дескриптор записи в файл-хранилище
 	}
 
 	//	при остановке сервера отложенно закроем все источники данных

@@ -31,9 +31,8 @@ type Metrics struct {
 
 //	Storage - структура хранилища метрик для работы в оперативной памяти
 type Storage struct {
-	Data       []Metrics  //	срез для хранения метрик
-	SyncWriter *writer    //	дескриптор записи в файл-хранилище
-	mutex      sync.Mutex //	блокиратор записи в структуру
+	Data  []Metrics
+	mutex sync.Mutex
 }
 
 //	ErrEmptyNotAllowed - ошибка возникающая при попытке вставить пустое значение в любое поле структуры хранения URL

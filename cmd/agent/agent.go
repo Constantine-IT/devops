@@ -51,7 +51,6 @@ func main() {
 		defer wg.Done()
 		for {
 			<-gopTicker.C
-			//	считываем статиститку и увеличиваем счетчик считываний на 1
 			g, _ := mem.VirtualMemory()
 			GopStatistics = *g
 

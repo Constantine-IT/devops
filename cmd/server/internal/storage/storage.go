@@ -98,8 +98,7 @@ func (s *Storage) Close() { //	при остановке сервера
 	if fileWriter != nil { //	если открыт файл-хранилище
 		//	 сбрасываем содержимое структур оперативной памяти в файл
 		DumpToFile(s)
-		// закрываем reader и writer для файла-хранилища
-		fileReader.Close()
+		// закрываем writer для файла-хранилища
 		fileWriter.Close()
 	}
 }
@@ -110,19 +109,20 @@ func (s *Storage) InitialFulfilment() {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	for { //	считываем записи по одной из файла-хранилища
-		addMetrica := true //	флаг, показывающий, будем ли добавлять метрику в хранилище
-		metrica, err := fileReader.Read()
-		//	когда дойдем до конца файла - выходим из цикла чтения
-		if errors.Is(err, io.EOF) {
+	for {
+		addMetrica := true                //	флаг, показывающий, будем ли добавлять метрику в хранилище
+		metrica, err := fileReader.Read() //	считываем записи по одной из файла-хранилища
+
+		if errors.Is(err, io.EOF) { //	когда дойдем до конца файла - выходим из цикла чтения
 			log.Println("initial load metrics from file - SUCCESS")
 			break
 		}
-		if err != nil {
+		if err != nil { //	при ошибке чтения метрики - пропускаем её и читаем файл дальше
 			log.Println("file read error due to InitialFulfilment process")
-			break
+			continue
 		}
-		//	добавляем считанную метрику в хранилище в оперативной памяти - storage.Storage
+
+		//	добавляем считанную метрику в хранилище в оперативной памяти - Storage
 		for _, m := range s.Data {
 			if m.ID == metrica.ID {
 				addMetrica = false //	если метрика уже есть в хранилище, выставляем флаг на пропуск этой метрики

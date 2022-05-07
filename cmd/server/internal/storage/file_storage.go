@@ -2,6 +2,7 @@ package storage
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"sync"
 )
@@ -22,7 +23,7 @@ type writer struct {
 //	NewWriter - конструктор, создающий экземпляр файлового дескриптора для записи
 func NewWriter(fileName string) (*writer, error) {
 	//	файл открывается только на запись с добавлением в конец файла, если файла нет - создаем
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0777) //	|os.O_APPEND|os.O_TRUNC
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777) //	|os.O_APPEND|os.O_TRUNC
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +83,7 @@ func (c *reader) Close() error {
 
 //	DumpToFile - сбрасывает все метрики в файловое хранилище, затирая его содержимое новой информацией
 func DumpToFile(s *Storage) error {
+	log.Println("DumpToFile")
 	//	перебираем все строки хранилища метрик в оперативной памяти по одной и вставляем в файл-хранилище
 	for _, m := range s.Data {
 		if err := fileWriter.Write(&m); err != nil {

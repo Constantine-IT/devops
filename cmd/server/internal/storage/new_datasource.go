@@ -8,25 +8,14 @@ import (
 	"time"
 )
 
-// NewDatasource - функция конструктор, инициализирующая хранилище URL и интерфейсы работы с файлом, хранящим URL
+// NewDatasource - функция конструктор, инициализирующая источник данных для метрик и интерфейсы работы с файлом-хранилищем
 func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, restoreOnStart bool) (strg Datasource, err error) {
 	//	Приоритетность в использовании ресурсов хранения информации URL (по убыванию приоритета):
 	//	1.	Внешняя база данных, параметры соединения с которой задаются через DATABASE_DSN
 	//	2.	Если БД не задана, то используем файловое хранилище (задаваемое через STORE_FILE) и оперативную память
 	//	3.	Если не заданы ни БД, ни файловое хранилище, то работаем только с оперативной памятью - структура storage.Storage
 
-	if storeFile != "" { //	если задан STORE_FILE, порождаем reader и writer для файла-хранилища
-		fileReader, err = NewReader(storeFile)
-		if err != nil { //	при ошибке создания reader, прерываем работу конструктора
-			return nil, err
-		}
-		fileWriter, err = NewWriter(storeFile)
-		if err != nil { //	при ошибке создания writer, прерываем работу конструктора
-			return nil, err
-		}
-	}
-
-	if databaseDSN != "" { //	если задана переменная среды DATABASE_DSN
+	if databaseDSN != "" { //	если задана переменная DATABASE_DSN
 		var err error
 		var d Database
 		//	открываем connect с базой данных PostgreSQL 10+
@@ -52,13 +41,38 @@ func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, r
 		}
 		//	если всё прошло успешно, возвращаем в качестве источника данных - базу данных
 		strg = &Database{DB: d.DB}
+		//	если задан STORE_FILE и включена опция RESTORE - загружаем из файла список метрик
+		if restoreOnStart && storeFile != "" {
+			fileReader, err = NewReader(storeFile) //	 порождаем reader для файла-хранилища
+			if err != nil {                        //	при ошибке создания reader, прерываем работу конструктора
+				return nil, err
+			}
+			strg.InitialFulfilment() //	производим первичное заполнение хранилища метрик из файла
+			// закрываем reader для файла-хранилища
+			fileReader.Close()
+		}
 	} else { //	если база данных не задана, то работаем со структурой хранения в оперативной памяти
 		s := Storage{Data: make([]Metrics, 0)}
 		strg = &s
+		if storeFile != "" { //	если задан STORE_FILE - опционально подключаем файл-хранилище метрик
 
-		//	если задан STORE_FILE - опционально подключаем файл-хранилище метрик
-		if fileWriter != nil {
-			go func() { //	запускаем отдельный воркер - записи метрик в файл на периодической основе
+			if restoreOnStart { //	если включена опция RESTORE - загружаем из файла список метрик
+				fileReader, err = NewReader(storeFile) //	 порождаем reader для файла-хранилища
+				if err != nil {                        //	при ошибке создания reader, прерываем работу конструктора
+					return nil, err
+				}
+				strg.InitialFulfilment() //	производим первичное заполнение хранилища метрик из файла
+				// закрываем reader для файла-хранилища
+				fileReader.Close()
+			}
+
+			fileWriter, err = NewWriter(storeFile) //	порождаем writer для файла-хранилища
+			if err != nil {                        //	при ошибке создания writer, прерываем работу конструктора
+				return nil, err
+			}
+
+			//	запускаем отдельный воркер - записи метрик в файл на периодической основе
+			go func() {
 				if storeInterval <= 0 { //	минимальный интервал сброса дампа метрик в файл - 1 секунда
 					storeInterval = 1
 				}
@@ -66,8 +80,7 @@ func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, r
 				fileWriteTicker := time.NewTicker(storeInterval)
 				defer fileWriteTicker.Stop()
 
-				// запускаем слежение за каналами тикера записи в файл
-				for {
+				for { // запускаем слежение за каналами тикера записи в файл
 					<-fileWriteTicker.C
 					//	пишем метрики в файл
 					if err := DumpToFile(&s); err != nil {
@@ -78,10 +91,6 @@ func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, r
 
 			}()
 		}
-	}
-	//	если включена опция RESTORE - производим первичное заполнение хранилища метрик из файла
-	if restoreOnStart && fileReader != nil {
-		strg.InitialFulfilment()
 	}
 	return strg, nil //	если всё прошло ОК, то возращаем выбранный источник данных
 }

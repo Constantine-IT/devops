@@ -36,4 +36,4 @@ type Storage struct {
 }
 
 //	ErrEmptyNotAllowed - ошибка возникающая при попытке вставить пустое значение в любое поле структуры хранения URL
-var ErrEmptyNotAllowed = errors.New("DataBase: empty value is not allowed")
+var ErrEmptyNotAllowed = errors.New("empty value is not allowed")

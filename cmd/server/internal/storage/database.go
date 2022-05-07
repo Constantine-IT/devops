@@ -111,17 +111,18 @@ func (d *Database) Close() {
 
 //	InitialFulfilment - метод первичного заполнения хранилища метрик из файла-хранилища, при старте сервера
 func (d *Database) InitialFulfilment() {
-	for { //	считываем записи по одной из файла-хранилища
-		metrica, err := fileReader.Read()
-		//	когда дойдем до конца файла - выходим из цикла чтения
-		if errors.Is(err, io.EOF) {
+	for {
+		metrica, err := fileReader.Read() //	считываем записи по одной из файла-хранилища
+
+		if errors.Is(err, io.EOF) { //	когда дойдем до конца файла - выходим из цикла чтения
 			log.Println("initial load metrics from file - SUCCESS")
 			break
 		}
-		if err != nil {
+		if err != nil { //	при ошибке чтения метрики - пропускаем её и читаем файл дальше
 			log.Println("file read error due to InitialFulfilment process")
-			break
+			continue
 		}
+
 		d.Insert(metrica.ID, metrica.MType, metrica.Delta, metrica.Value)
 	}
 }

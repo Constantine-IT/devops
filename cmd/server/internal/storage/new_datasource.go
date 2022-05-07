@@ -73,8 +73,8 @@ func NewDatasource(databaseDSN, storeFile string, storeInterval time.Duration, r
 
 			//	запускаем отдельный воркер - записи метрик в файл на периодической основе
 			go func() {
-				if storeInterval <= 0 { //	минимальный интервал сброса дампа метрик в файл - 1 секунда
-					storeInterval = 1
+				if storeInterval < 1*time.Second { //	минимальный интервал сброса дампа метрик в файл - 1 секунда
+					storeInterval = 1 * time.Second
 				}
 				// создаём тикер, подающий раз в StoreInterval секунд, сигнал на запись метрик в файл
 				fileWriteTicker := time.NewTicker(storeInterval)

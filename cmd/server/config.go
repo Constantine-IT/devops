@@ -20,6 +20,7 @@ type Config struct {
 	ErrorLog       *log.Logger
 }
 
+//	newConfig - функция-конфигуратор приложения через считывание флагов и переменных окружения
 func newConfig() (cfg Config) {
 	//	Приоритеты настроек:
 	//	1.	Переменные окружения - ENV

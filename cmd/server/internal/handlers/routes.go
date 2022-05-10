@@ -42,15 +42,7 @@ func (app *Application) Routes() chi.Router {
 	//r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	/*	Эндпоинт POST - принимает значение метрики в PATH = "/update/{MetricaType}/{MetricaName}/{MetricaValue}"
-		Эндпоинт POST /updates/ - принимает в теле пакета множество метрик в формате JSON со структурой []Metrics
-		Эндпоинт POST /update - принимает значение метрики в формате JSON со структурой Metrics
-		Эндпоинт POST /value - принимает запрос значения метрики в формате JSON в теле пакета со структурой Metrics,
-					с пустыми полями Delta и Value, в ответ получает тот же JSON, но уже с заполненными полями
-		Эндпоинт GET - запрашивает значение метрики по данным из PATH = "/value/{MetricaType}/{MetricaName}",
-					ответ возвращаает в текстовом виде в теле пакета
-		Эндпоинт GET / - запрашивает список всех сохраненных в базе метрик,
-					ответ возвращаает в текстовом виде в теле пакета	*/
+	//	маршруты сервера с обработчиками
 	r.Route("/", func(r chi.Router) {
 		r.Post("/update/{Type}/{Name}/{Value}", app.PostMetricaHandler)
 		r.Post("/update/", app.PostJSONMetricaHandler)

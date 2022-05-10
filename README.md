@@ -47,3 +47,31 @@ go get github.com/shirou/gopsutil/v3/mem
 go get github.com/go-resty/resty/v2
 go get github.com/jackc/pgx/stdlib
 ```
+# Metrics - структура для обмена информацией о метриках между сервером и агентами мониторинга
+```
+type Metrics struct {
+ID    string  `json:"id"`              // имя метрики
+MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
+Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+Hash  string  `json:"hash,omitempty"`  // значение хеш-подписи
+}
+```
+# API агента:
+агент высылает метрики на сервер на эндпоинт POST `/updates/` пакетом со списком метрик в формате JSON с массивм структур Metrics
+
+`поддерживаются только метрики типов gauge и counter`
+# API сервера:
+Эндпоинт POST - принимает значение метрики через PATH = `/update/{MetricaType}/{MetricaName}/{MetricaValue}`
+
+Эндпоинт POST `/updates/` - принимает в теле пакета множество метрик в формате JSON с массивм структур Metrics
+
+Эндпоинт POST `/update` - принимает значение метрики в формате JSON со структурой Metrics
+
+Эндпоинт POST `/value` - принимает запрос значения метрики в формате JSON в теле пакета со структурой Metrics, с пустыми полями Delta и Value, в ответ получает тот же JSON, но уже с заполненными полями
+
+Эндпоинт GET - запрашивает значение метрики через PATH = `/value/{MetricaType}/{MetricaName}`, ответ возвращаает в текстовом виде в теле пакета
+
+Эндпоинт GET `/` - запрашивает список всех сохраненных в базе метрик, ответ возвращаает в текстовом виде в теле пакета
+
+`поддерживаются только метрики типов gauge и counter`

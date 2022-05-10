@@ -23,7 +23,7 @@ type Metrics struct {
 	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
 	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
 	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-	Hash  string  `json:"hash,omitempty"`  // значение хеш-функции
+	Hash  string  `json:"hash,omitempty"`  // значение хеш-подписи
 }
 
 func (app *Application) Routes() chi.Router {
@@ -42,13 +42,15 @@ func (app *Application) Routes() chi.Router {
 	//r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	/*	Эндпоинт POST - принимает значение метрики в формате PATH = "/update/{MetricaType}/{MetricaName}/{MetricaValue}"
-		Эндпоинт POST /updates/ - принимает в теле запроса множество метрик в формате: []Metrics
+	/*	Эндпоинт POST - принимает значение метрики в PATH = "/update/{MetricaType}/{MetricaName}/{MetricaValue}"
+		Эндпоинт POST /updates/ - принимает в теле пакета множество метрик в формате JSON со структурой []Metrics
 		Эндпоинт POST /update - принимает значение метрики в формате JSON со структурой Metrics
-		Эндпоинт POST /value - принимает запрос значения метрики в формате JSON со структурой Metrics,
-					с пустыми полями значения метрики, в ответ получает тот же JSON, но уже с заполненными полями
-		Эндпоинт GET - возвращает значение метикрики по данным из PATH = "/value/{MetricaType}/{MetricaName}"
-		Эндпоинт GET / - возвращает список всех сохраненных в базе метрик	*/
+		Эндпоинт POST /value - принимает запрос значения метрики в формате JSON в теле пакета со структурой Metrics,
+					с пустыми полями Delta и Value, в ответ получает тот же JSON, но уже с заполненными полями
+		Эндпоинт GET - запрашивает значение метрики по данным из PATH = "/value/{MetricaType}/{MetricaName}",
+					ответ возвращаает в текстовом виде в теле пакета
+		Эндпоинт GET / - запрашивает список всех сохраненных в базе метрик,
+					ответ возвращаает в текстовом виде в теле пакета	*/
 	r.Route("/", func(r chi.Router) {
 		r.Post("/update/{Type}/{Name}/{Value}", app.PostMetricaHandler)
 		r.Post("/update/", app.PostJSONMetricaHandler)

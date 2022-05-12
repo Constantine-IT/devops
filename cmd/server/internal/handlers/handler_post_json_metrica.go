@@ -55,7 +55,7 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 		h := hmac.New(sha256.New, []byte(app.KeyToSign)) //	создаём интерфейс подписи с хешированием
 		//	формируем фразу для хеширования по разному шаблону для метрик типа counter и gauge
 		if metrica.MType == "counter" {
-			h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, metrica.Delta)))
+			h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, *metrica.Delta)))
 		}
 		if metrica.MType == "gauge" {
 			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, *metrica.Value)))
@@ -65,7 +65,6 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 		if metrica.Hash != metricaHash {
 			http.Error(w, "HASH signature of metrica is NOT valid for our server", http.StatusBadRequest)
 			app.ErrorLog.Println("HASH signature of metrica is NOT valid for our server")
-			app.ErrorLog.Println("ID: ", metrica.ID, "\nTYPE: ", metrica.MType, "\nVALUE: ", metrica.Value, "\nDELTA: ", metrica.Delta)
 			return
 		}
 	}

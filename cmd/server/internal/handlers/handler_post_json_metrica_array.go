@@ -65,7 +65,6 @@ func (app *Application) PostJSONMetricaArrayHandler(w http.ResponseWriter, r *ht
 			metricaHash := fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string
 			if metrica.Hash != metricaHash {
 				app.ErrorLog.Println("HASH signature of metrica is NOT valid for our server")
-				app.ErrorLog.Println("ID: ", metrica.ID, "\nTYPE: ", metrica.MType, "\nVALUE: ", metrica.Value, "\nDELTA: ", metrica.Delta)
 				continue
 				//return
 			}

@@ -42,6 +42,13 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	if metrica.MType == "gauge" && metrica.Value == nil {
+		*metrica.Value = 0
+	}
+	if metrica.MType == "counter" && metrica.Delta == nil {
+		*metrica.Delta = 0
+	}
+
 	if app.KeyToSign != "" { //	если ключ для изготовления подписи задан, вычисляем для метрики подпись HMAC c SHA256
 		h := hmac.New(sha256.New, []byte(app.KeyToSign)) //	создаём интерфейс подписи с хешированием
 		//	формируем фразу для хеширования по разному шаблону для метрик типа counter и gauge

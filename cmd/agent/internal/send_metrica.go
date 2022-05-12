@@ -69,8 +69,8 @@ func SendMetrics(m runtime.MemStats, g mem.VirtualMemoryStat, pollCount int64, s
 
 	for name := range gaugeMetrics { //	пробегаем по всем метрикам типа gauge
 
-		var value float64          //	компиллятор не может напрямую найти адрес ячейки map - gaugeMetrics
-		value = gaugeMetrics[name] //	поэтому вводим дополнительную переменную для хранения нужного значения
+		var value = gaugeMetrics[name] //	компиллятор не может напрямую найти адрес ячейки map - gaugeMetrics
+		//	поэтому вводим дополнительную переменную для хранения нужного значения
 		//	причём при каждом прогоне цикла - это будет новая переменная с новым адресом
 		//	иначе значение переменной перезаписывалось бы при каждом прогоне цикла
 

@@ -74,7 +74,7 @@ func (app *Application) PostJSONMetricaArrayHandler(w http.ResponseWriter, r *ht
 		//	если метрика имеет тип gauge, то передаем её в структуру хранения, как Value (type gauge float64)
 		//	если метрика имеет тип counter, то передаем её в структуру хранения, как Delta (type counter int64)
 
-		if err := app.Datasource.Insert(metrica.ID, metrica.MType, 0, *metrica.Value); err != nil {
+		if err := app.Datasource.Insert(metrica.ID, metrica.MType, *metrica.Delta, *metrica.Value); err != nil {
 			app.ErrorLog.Println("Metrica save ", err.Error())
 			continue
 		}

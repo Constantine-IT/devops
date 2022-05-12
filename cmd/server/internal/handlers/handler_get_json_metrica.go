@@ -78,8 +78,41 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 		metrica.Hash = fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string и вставляем в метрику в поле HASH
 	}
 
-	metricsJSON, err := json.Marshal(metrica) //	изготавливаем JSON со структурой нашей метрики
-	if err != nil || metricsJSON == nil {     //	в случае ошибки преобразования, выдаем http.StatusInternalServerError
+	type CounterMetrics struct {
+		ID    string  `json:"id"`              // имя метрики
+		MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
+		Delta int64   `json:"delta"`           // значение метрики в случае передачи counter
+		Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+		Hash  string  `json:"hash,omitempty"`  // значение хеш-подписи
+	}
+	counterMetrica := CounterMetrics{
+		ID:    metrica.ID,
+		MType: metrica.MType,
+		Delta: metrica.Delta,
+		Hash:  metrica.Hash,
+	}
+	type GaugeSendMetrics struct {
+		ID    string  `json:"id"`              // имя метрики
+		MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
+		Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+		Value float64 `json:"value"`           // значение метрики в случае передачи gauge
+		Hash  string  `json:"hash,omitempty"`  // значение хеш-подписи
+	}
+	gaugeSendMetrica := GaugeSendMetrics{
+		ID:    metrica.ID,
+		MType: metrica.MType,
+		Value: metrica.Value,
+		Hash:  metrica.Hash,
+	}
+
+	//	изготавливаем JSON со структурой нашей метрики
+	MetricsJSON, err := json.Marshal(counterMetrica)
+
+	if metrica.MType == "gauge" {
+		MetricsJSON, err = json.Marshal(gaugeSendMetrica)
+	}
+
+	if err != nil || MetricsJSON == nil { //	в случае ошибки преобразования, выдаем http.StatusInternalServerError
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		app.ErrorLog.Println("Marshal JSON ", err.Error())
 		return
@@ -88,5 +121,5 @@ func (app *Application) GetJSONMetricaHandler(w http.ResponseWriter, r *http.Req
 	//	формируем ответ с http.StatusOK и метрикой в теле ответа в виде JSON
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(metricsJSON) //	пишем метрику в JSON виде в тело ответа
+	w.Write(MetricsJSON) //	пишем метрику в JSON виде в тело ответа
 }

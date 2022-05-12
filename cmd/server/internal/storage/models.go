@@ -23,10 +23,10 @@ type Database struct {
 
 //	Metrics - структура для хранения метрик в оперативной памяти
 type Metrics struct {
-	ID    string  `json:"id"`              // имя метрики
-	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	ID    string  // имя метрики
+	MType string  // тип метрики
+	Delta int64   // значение метрики в случае типа - counter
+	Value float64 // значение метрики в случае типа - gauge
 }
 
 //	Storage - структура хранилища метрик для работы в оперативной памяти

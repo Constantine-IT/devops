@@ -15,12 +15,16 @@ import (
 
 //	Metrics - структура для обмена информацией о метриках между сервером и агентами мониторинга
 type Metrics struct {
-	ID    string  `json:"id"`              // имя метрики
-	MType string  `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-	Hash  string  `json:"hash,omitempty"`  // значение хеш-функции
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Hash  string   `json:"hash,omitempty"`  // значение хеш-функции
 }
+
+//	обратите внимание, что для полей Delta и Value используется указатель на примитив, а не сам примитив
+//	это сделано специально, так как в этом случае при сериализации в JSON, если значение поля не задано -
+//	оно в JSON вообще не попадёт, а если задано, пусть даже равным 0 (нулю) - попадёт в явном виде
 
 func SendMetrics(m runtime.MemStats, g mem.VirtualMemoryStat, pollCount int64, serverAddress, KeyToSign string) {
 
@@ -63,49 +67,53 @@ func SendMetrics(m runtime.MemStats, g mem.VirtualMemoryStat, pollCount int64, s
 	gaugeMetrics["CPUutilization1"] = g.UsedPercent
 	gaugeMetrics["RandomValue"] = rand.Float64()
 
-	metrica := Metrics{ //	изготавливаем структуру для отправки метрик типа gauge, для них delta = 0
-		MType: "gauge",
-		Delta: 0,
-	}
+	for name := range gaugeMetrics { //	пробегаем по всем метрикам типа gauge
 
-	for name, row := range gaugeMetrics { //	пробегаем по всем метрикам типа gauge
-		//	заполняем структуру metrica данными конкретной метрики
-		metrica.ID = name
-		metrica.Value = row
+		var value float64          //	компиллятор не может напрямую найти адрес ячейки map - gaugeMetrics
+		value = gaugeMetrics[name] //	поэтому вводим дополнительную переменную для хранения нужного значения
+		//	причём при каждом прогоне цикла - это будет новая переменная с новым адресом
+		//	иначе значение переменной перезаписывалось бы при каждом прогоне цикла
+
+		//	изготавливаем структуру для отправки метрик типа gauge
+		metricaGauge := Metrics{
+			ID:    name,
+			MType: "gauge",
+			Value: &value,
+		}
 		if KeyToSign != "" { //	если ключ для подписи задан
 			h := hmac.New(sha256.New, []byte(KeyToSign)) //	создаём интерфейс подписи с хешированием
 			//	формируем фразу для хеширования метрики по шаблону типа gauge
-			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, metrica.Value)))
+			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metricaGauge.ID, *metricaGauge.Value)))
 			hash256 := h.Sum(nil) //	вычисляем HASH сумму в виде []byte
 			//	переводим её в тип данных string и вставляем в метрику подпись HMAC c SHA256
-			metrica.Hash = fmt.Sprintf("%x", hash256)
+			metricaGauge.Hash = fmt.Sprintf("%x", hash256)
 		}
 
 		//	добавляем сформированную метрику в массив для отправки на сервер
-		MetricaArray = append(MetricaArray, metrica)
+		MetricaArray = append(MetricaArray, metricaGauge)
 	}
 
 	//	теперь пройдёмся по всем метрикам типа counter
 
-	//	меняем структуру metrica под метрики типа counter, для них value = 0
-	metrica.MType = "counter"
-	metrica.Value = 0
-
-	// такая метрика у нас одна, так что задаем её значения напрямую
-	metrica.ID = "PollCount"
-	metrica.Delta = pollCount
+	//	изготавливаем структуру для отправки метрик типа counter,
+	//	такая метрика у нас одна, так что задаем её значения напрямую
+	metricaCounter := Metrics{
+		ID:    "PollCount",
+		MType: "counter",
+		Delta: &pollCount,
+	}
 
 	if KeyToSign != "" { //	если ключ для изготовления подписи задан
 		h := hmac.New(sha256.New, []byte(KeyToSign)) //	создаём интерфейс подписи с хешированием
 		//	формируем фразу для хеширования метрики по шаблону типа counter
-		h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, metrica.Delta)))
+		h.Write([]byte(fmt.Sprintf("%s:counter:%d", metricaCounter.ID, *metricaCounter.Delta)))
 		hash256 := h.Sum(nil) //	вычисляем HASH сумму в виде []byte
 		//	переводим её в тип данных string и вставляем в метрику подпись HMAC c SHA256
-		metrica.Hash = fmt.Sprintf("%x", hash256)
+		metricaCounter.Hash = fmt.Sprintf("%x", hash256)
 	}
 
 	//	добавляем сформированную метрику в массив для отправки на сервер
-	MetricaArray = append(MetricaArray, metrica)
+	MetricaArray = append(MetricaArray, metricaCounter)
 
 	//	если массив с метриками содержит данные, то отправляем его на сервер с указанным адресом
 	if len(MetricaArray) > 0 {

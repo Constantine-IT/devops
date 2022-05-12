@@ -19,17 +19,17 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	//	сохраняем метрики в оперативной памяти в структуре storage.Storage
-	//	каждая запись - это структура метрики с (NAME + Type + VALUE/DELTA) - Metrics
-	//	для метрик типа gauge задано только поле value
-	//	для метрик типа count задано только поле delta
+	//	сохраняем метрики в оперативной памяти в структуре Storage
+	//	каждая запись - это структура Metrics - (NAME + Type + VALUE/DELTA)
+	//	для метрик типа gauge задано только поле Value
+	//	для метрик типа count задано только поле Delta
 
 	if mType == "gauge" { //	для метрик типа GAUGE
 		flgExist := 0 //	изначально предполагаем, что такой метрики у нас в базе нет
 
 		for i, m := range s.Data { //	ищем метрику в базе
 			if m.ID == name { //	если метрика уже существует, то для метрик типа GAUGE
-				s.Data[i].Value = value //	новое значение заменяют предыдущие значения
+				s.Data[i].Value = value //	новое значение заменяют предыдущее значение
 				flgExist = 1            //	выставляем флаг, чтобы пропустить создание новой метрики
 				break                   //	завершаем перебор строк хранилища
 			}
@@ -42,7 +42,6 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 				Value: value,
 			}
 			s.Data = append(s.Data, m) //	добавляем созданную новую запись в базу
-			log.Println(m)
 		}
 	}
 

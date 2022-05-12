@@ -133,7 +133,7 @@ func TestHandlersResponse(t *testing.T) {
 			name:        "Test #10: Request POST to update one metrica value by API",
 			request:     "/update",
 			requestType: http.MethodPost,
-			body:        `{"id":"Alloc", "type":"gauge"}`,
+			body:        `{"id":"Alloc", "type":"gauge",  "value":0}`,
 			want: want{
 				statusCode:  http.StatusOK,
 				contentType: "",

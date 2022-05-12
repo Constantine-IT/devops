@@ -47,10 +47,10 @@ func (app *Application) PostJSONMetricaArrayHandler(w http.ResponseWriter, r *ht
 			h := hmac.New(sha256.New, []byte(app.KeyToSign)) //	создаём интерфейс подписи с хешированием
 			//	формируем фразу для хеширования по разному шаблону для метрик типа counter и gauge
 			if metrica.MType == "counter" {
-				h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, metrica.Delta)))
+				h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, *metrica.Delta)))
 			}
 			if metrica.MType == "gauge" {
-				h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, metrica.Value)))
+				h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, *metrica.Value)))
 			}
 			hash256 := h.Sum(nil)                     //	вычисляем HASH для метрики
 			metricaHash := fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string
@@ -72,13 +72,13 @@ func (app *Application) PostJSONMetricaArrayHandler(w http.ResponseWriter, r *ht
 			//	в автотестах инкремента 4 и 9 косяк - там на сервер высылают несколько метрик типа gauge с value = 0,
 			//	а потом запрашивают их значение и выдают ошибку, получая value = 0, считая это недопустимым для gauge
 			//	поэтому для прохождения тестов пришлось поставить обманку, заменяя 0 на 0.0000000001
-			if metrica.Value == 0 {
-				metrica.Value = 0.0000000001
-			}
-			errInsert = app.Datasource.Insert(metrica.ID, metrica.MType, 0, metrica.Value)
+			//if metrica.Value == 0 {
+			//	metrica.Value = 0.0000000001
+			//}
+			errInsert = app.Datasource.Insert(metrica.ID, metrica.MType, 0, *metrica.Value)
 		}
 		if metrica.MType == "counter" {
-			errInsert = app.Datasource.Insert(metrica.ID, metrica.MType, metrica.Delta, 0)
+			errInsert = app.Datasource.Insert(metrica.ID, metrica.MType, *metrica.Delta, 0)
 		}
 		if errInsert != nil {
 			app.ErrorLog.Println("Metrica save ", errInsert.Error())

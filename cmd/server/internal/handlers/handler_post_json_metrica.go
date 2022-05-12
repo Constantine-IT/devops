@@ -49,7 +49,7 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 			h.Write([]byte(fmt.Sprintf("%s:counter:%d", metrica.ID, metrica.Delta)))
 		}
 		if metrica.MType == "gauge" {
-			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, metrica.Value)))
+			h.Write([]byte(fmt.Sprintf("%s:gauge:%f", metrica.ID, *metrica.Value)))
 		}
 		hash256 := h.Sum(nil)                     //	вычисляем HASH для метрики
 		metricaHash := fmt.Sprintf("%x", hash256) //	переводим всё в тип данных string
@@ -74,10 +74,10 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 		//if metrica.Value == 0 {
 		//	metrica.Value = 0.0000000001
 		//}
-		errType = app.Datasource.Insert(metrica.ID, metrica.MType, 0, metrica.Value)
+		errType = app.Datasource.Insert(metrica.ID, metrica.MType, 0, *metrica.Value)
 	}
 	if metrica.MType == "counter" {
-		errType = app.Datasource.Insert(metrica.ID, metrica.MType, metrica.Delta, 0)
+		errType = app.Datasource.Insert(metrica.ID, metrica.MType, *metrica.Delta, 0)
 	}
 	if errType != nil {
 		http.Error(w, errType.Error(), http.StatusInternalServerError)

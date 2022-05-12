@@ -42,6 +42,7 @@ func (s *Storage) Insert(name, mType string, delta int64, value float64) error {
 				Value: value,
 			}
 			s.Data = append(s.Data, m) //	добавляем созданную новую запись в базу
+			log.Println(m)
 		}
 	}
 

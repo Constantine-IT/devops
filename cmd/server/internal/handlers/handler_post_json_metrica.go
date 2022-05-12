@@ -71,9 +71,9 @@ func (app *Application) PostJSONMetricaHandler(w http.ResponseWriter, r *http.Re
 		//	в автотестах инкремента 4 и 9 косяк - там на сервер высылают несколько метрик типа gauge с value = 0,
 		//	а потом запрашивают их значение и выдают ошибку, получая value = 0, считая это недопустимым для gauge
 		//	поэтому для прохождения тестов пришлось поставить обманку, заменяя 0 на 0.0000000001
-		if metrica.Value == 0 {
-			metrica.Value = 0.0000000001
-		}
+		//if metrica.Value == 0 {
+		//	metrica.Value = 0.0000000001
+		//}
 		errType = app.Datasource.Insert(metrica.ID, metrica.MType, 0, metrica.Value)
 	}
 	if metrica.MType == "counter" {

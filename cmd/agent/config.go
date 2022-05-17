@@ -10,12 +10,12 @@ import (
 )
 
 type Config struct {
-	ServerAddress  string
-	KeyToSign      string
-	PollInterval   time.Duration
-	ReportInterval time.Duration
-	InfoLog        *log.Logger
-	ErrorLog       *log.Logger
+	ServerAddress  string        //	адрес сервера-агрегатора метрик
+	KeyToSign      string        //	ключ подписи передаваемых метрик
+	PollInterval   time.Duration //	интервал обновления метрик
+	ReportInterval time.Duration //	интервал отправки метрик на сервер
+	InfoLog        *log.Logger   //	logger для информационных сообщений
+	ErrorLog       *log.Logger   //	logger для сообщений об ошибках
 }
 
 //	newConfig - функция-конфигуратор приложения через считывание флагов и переменных окружения

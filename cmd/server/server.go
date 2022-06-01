@@ -18,10 +18,10 @@ func main() {
 
 	//	конструктор источника данных сервера, на основе входящих параметров
 	datasource, err := storage.NewDatasource(cfg.DatabaseDSN, cfg.StoreFile, cfg.StoreInterval, cfg.RestoreOnStart)
-	defer datasource.Close()
 	if err != nil {
 		cfg.ErrorLog.Fatal(err)
 	}
+	defer datasource.Close()
 
 	//	инициализируем контекст нашего приложения
 	app := &handlers.Application{

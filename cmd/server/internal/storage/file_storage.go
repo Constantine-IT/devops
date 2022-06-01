@@ -1,9 +1,10 @@
 package storage
 
 import (
-	"encoding/json"
 	"os"
 	"sync"
+
+	"encoding/json"
 )
 
 //	Структуры и методы работы с файлом-хранилищем метрик

@@ -1,10 +1,15 @@
 package main
 
 import (
-	"github.com/Constantine-IT/devops/cmd/server/internal/handlers"
-	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/Constantine-IT/devops/cmd/server/internal/handlers"
+	"github.com/Constantine-IT/devops/cmd/server/internal/storage"
 )
 
 func main() {
@@ -13,6 +18,7 @@ func main() {
 
 	//	конструктор источника данных сервера, на основе входящих параметров
 	datasource, err := storage.NewDatasource(cfg.DatabaseDSN, cfg.StoreFile, cfg.StoreInterval, cfg.RestoreOnStart)
+	defer datasource.Close()
 	if err != nil {
 		cfg.ErrorLog.Fatal(err)
 	}
@@ -25,8 +31,8 @@ func main() {
 		Datasource: datasource,    //	источник данных для хранения метрик
 	}
 
-	//	при остановке сервера отложенно закроем все источники данных
-	defer app.Datasource.Close()
+	//	запускаем процесс слежение за сигналами на останов программы
+	go termSignal()
 
 	srv := &http.Server{
 		Addr:     cfg.ServerAddress, //	адрес запуска сервера
@@ -35,4 +41,25 @@ func main() {
 	}
 	//	запускаем сервер сбора метрик
 	log.Fatal(srv.ListenAndServe())
+}
+
+// termSignal - функция слежения за сигналами на останов сервера
+func termSignal() {
+	// сигнальный канал для отслеживания системных вызовов на остановку программы
+	signalChanel := make(chan os.Signal, 1)
+	signal.Notify(signalChanel,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+
+	//	запускаем слежение за сигнальным каналом
+	for {
+		sigTerm := <-signalChanel
+		if sigTerm == syscall.SIGINT || sigTerm == syscall.SIGTERM || sigTerm == syscall.SIGQUIT {
+			//	при получении сигнала, останавливаем программу с кодом - 0
+			time.Sleep(1 * time.Second)
+			log.Println("AGENT Gophermart SHUTDOWN (code 0)")
+			os.Exit(0)
+		}
+	}
 }

@@ -1,11 +1,12 @@
 package storage
 
 import (
-	"database/sql"
-	_ "github.com/jackc/pgx/stdlib"
 	"log"
 	"os"
 	"time"
+
+	"database/sql"
+	_ "github.com/jackc/pgx/stdlib"
 )
 
 // NewDatasource - функция конструктор, инициализирующая источник данных для метрик и интерфейсы работы с файлом-хранилищем

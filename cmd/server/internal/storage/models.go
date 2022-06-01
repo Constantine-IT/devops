@@ -1,9 +1,10 @@
 package storage
 
 import (
-	"database/sql"
 	"errors"
 	"sync"
+
+	"database/sql"
 )
 
 //	Datasource - интерфейс источника данных для метрик

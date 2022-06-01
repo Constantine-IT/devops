@@ -4,8 +4,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
@@ -49,24 +47,6 @@ func newConfig() (cfg Config) {
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)                  // logger для информационных сообщений
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile) // logger для сообщений об ошибках
-
-	// сигнальный канал для отслеживания системных вызовов на остановку агента
-	signalChanel := make(chan os.Signal, 1)
-	signal.Notify(signalChanel,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-
-	//	запускаем процесс слежение за сигналами на останов агента
-	go func() {
-		for {
-			s := <-signalChanel
-			if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
-				cfg.InfoLog.Println("AGENT metrics collector normal SHUTDOWN (code 0)")
-				os.Exit(0)
-			}
-		}
-	}()
 
 	//	собираем конфигурацию агента
 	cfg = Config{

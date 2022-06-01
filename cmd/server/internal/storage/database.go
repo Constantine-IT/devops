@@ -1,11 +1,12 @@
 package storage
 
 import (
-	"database/sql"
 	"errors"
-	_ "github.com/jackc/pgx/stdlib"
 	"io"
 	"log"
+
+	"database/sql"
+	_ "github.com/jackc/pgx/stdlib"
 )
 
 //	Методы для работы с данными в структуре базы данных - Database

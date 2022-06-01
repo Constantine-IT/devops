@@ -4,8 +4,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
@@ -66,24 +64,6 @@ func newConfig() (cfg Config) {
 	// logger для информационных сообщений и для сообщений об ошибках
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
-
-	// сигнальный канал для отслеживания системных вызовов на остановку сервера
-	signalChanel := make(chan os.Signal, 1)
-	signal.Notify(signalChanel,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-
-	//	запускаем процесс слежение за сигналами на останов сервера
-	go func() {
-		for {
-			s := <-signalChanel
-			if s == syscall.SIGINT || s == syscall.SIGTERM || s == syscall.SIGQUIT {
-				cfg.InfoLog.Println("SERVER metrics collector normal SHUTDOWN (code 0)")
-				os.Exit(0)
-			}
-		}
-	}()
 
 	//	собираем конфигурацию сервера
 	cfg = Config{

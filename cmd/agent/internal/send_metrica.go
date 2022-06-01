@@ -1,11 +1,12 @@
 package internal
 
 import (
+	"fmt"
+	"log"
+
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
-	"fmt"
-	"log"
 	"math/rand"
 	"runtime"
 

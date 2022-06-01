@@ -7,8 +7,8 @@ import (
 
 //	GetAllMetricsHandler - обработчик GET / - возвращает список всех сохраненных в базе метрик
 func (app *Application) GetAllMetricsHandler(w http.ResponseWriter, r *http.Request) {
-	//	ищем в базее все сохранённые связки (NAME + Type + VALUE/DELTA)
-	metrics := app.Datasource.GetAll() //	они возвращаются в виде слайса структур хранения Storage
+	//	ищем в базе все сохранённые связки (NAME + Type + VALUE/DELTA)
+	metrics := app.Datasource.GetAll() //	они возвращаются в виде слайса структур хранения - Storage
 
 	//	создадим текстовый массив, содержащий все названия метрик и их значения
 	body := make([]byte, 0)

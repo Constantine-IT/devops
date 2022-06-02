@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"runtime"
@@ -50,7 +49,7 @@ func main() {
 				//	считываем статистику и увеличиваем счетчик повторного сбора статистики на 1
 				runtime.ReadMemStats(&memStatistics)
 				s.AddInt64(&pollCounter, 1)
-			case <-ctx.Done(): //	при подаче сигнала на останов сервера, прерываем сбор статистики
+			case <-ctx.Done(): //	при подаче сигнала на остановку программы, прерываем сбор статистики
 				cfg.InfoLog.Println("RUNTIME statistics collector has stopped")
 				return
 			}
@@ -64,7 +63,7 @@ func main() {
 			case <-pollTicker.C:
 				g, _ := mem.VirtualMemory()
 				GopStatistics = *g
-			case <-ctx.Done(): //	при подаче сигнала на останов сервера, прерываем сбор статистики
+			case <-ctx.Done(): //	при подаче сигнала на остановку программы, прерываем сбор статистики
 				cfg.InfoLog.Println("GOPSUTIL statistics collector has stopped")
 				return
 			}
@@ -80,7 +79,7 @@ func main() {
 				internal.SendMetrics(memStatistics, GopStatistics, pollCounter, cfg.ServerAddress, cfg.KeyToSign)
 				//	после передачи метрик, сбрасываем счетчик циклов измерения метрик в значение = 0
 				s.StoreInt64(&pollCounter, 0)
-			case <-ctx.Done(): //	при подаче сигнала на останов сервера, прерываем отправку статистики на сервер
+			case <-ctx.Done(): //	при подаче сигнала на остановку программы, прерываем отправку статистики на сервер
 				cfg.InfoLog.Println("Statistics sender has stopped")
 				return
 			}
@@ -88,13 +87,16 @@ func main() {
 	}()
 
 	//	запускаем процесс слежение за сигналами на останов программы
-	go termSignal(cancel)
+	go termSignal(cancel) //	при получении сигнала, выдаем всем горутинам сигнал на прерывание работы
 
 	//	ждём до закрытия всех горутин
 	wg.Wait()
+
+	cfg.InfoLog.Println("AGENT Gophermart SHUTDOWN (code 0)")
+	os.Exit(0) //	завершаем работу программы с кодом - 0
 }
 
-// termSignal - функция слежения за сигналами на остановку программы
+// termSignal - функция, выдающая горутинам сигнал на прерывание работы, при получении системных вызовов на остановку
 func termSignal(cancel context.CancelFunc) {
 	// сигнальный канал для отслеживания системных вызовов на остановку программы
 	signalChanel := make(chan os.Signal, 1)
@@ -103,14 +105,11 @@ func termSignal(cancel context.CancelFunc) {
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
 
-	//	запускаем слежение за сигнальным каналом
-	for {
-		sigTerm := <-signalChanel
+	for { //	запускаем слежение за сигнальным каналом
+		sigTerm := <-signalChanel //	при получении системного вызова на остановку программы
 		if sigTerm == syscall.SIGINT || sigTerm == syscall.SIGTERM || sigTerm == syscall.SIGQUIT {
-			cancel() //	при получении сигнала, прерываем контекст и останавливаем программу с кодом - 0
-			time.Sleep(1 * time.Second)
-			log.Println("AGENT Gophermart SHUTDOWN (code 0)")
-			os.Exit(0)
+			cancel() //	закрываем контекст, подавая горутинам сигнал на прерывание работы
+			return
 		}
 	}
 }
